@@ -30,6 +30,18 @@ app.get('/', (req, res) => {
 
 // query graph name
 app.post('/queryGraph/:graphName', (req, res) => {
-	console.log("graph name to query: " + req.params.graphName);
-	res.sendStatus(201);
+	var graphName = req.params.graphName;
+	console.log("graph name to query: " + graphName);
+	db.collection('graphs').findOne({name: graphName},(err, result) => {
+		if (err) {
+			return console.log(err);
+		}
+
+		console.log("callback " + result);
+		if (result !== null) {
+			res.send(result);
+		} else {
+			res.sendStatus(404);
+		}
+	});
 });
