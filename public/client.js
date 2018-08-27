@@ -1,9 +1,9 @@
 /******************************************* client-side **************************************************/
 console.log('client running');
 
-var vertexArray = [];
+var vertexArray;
 const batchSize = 5000;
-var iteration = 0;
+var totalIteration = 0;
 var totalVertex = 0;
 
 const button = document.getElementById('render');
@@ -16,14 +16,11 @@ button.addEventListener('click', function(event) {
 	}
 	// query the given graph to count total vertex count
 	countVertex(graphName);
-	// calculate iterations
-	// query the graph in a loop
-	// queryGraph(graphName);
 });
 
 function countVertex(graphName) {
 	console.log('count graph ' + graphName);
-
+	vertexArray = [];
 	fetch('/countVertex/' + graphName, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
@@ -33,11 +30,15 @@ function countVertex(graphName) {
 		throw new Error('count vertex failed');
 	})
 	.then(function(responseJSON) {
-		document.getElementById('mainDiv').innerHTML = JSON.stringify(responseJSON);
+		// document.getElementById('mainDiv').innerHTML = JSON.stringify(responseJSON);
 		totalVertex = JSON.stringify(responseJSON);
 		console.log("total vertex " + totalVertex);
-		iteration = Math.floor(totalVertex / batchSize) + ((totalVertex % batchSize) ? 1 : 0);
-		console.log("need to iterate " + iteration);
+		totalIteration = Math.floor(totalVertex / batchSize) + ((totalVertex % batchSize) ? 1 : 0);
+		console.log("need to iterate " + totalIteration);
+		// query the graph in a loop
+		if (totalVertex > 0) {
+			queryGraph(graphName, batchSize, 0);
+		}
 	})
 	.catch(function(err) {
 		document.getElementById('mainDiv').innerHTML = graphName + " not found";
@@ -45,10 +46,8 @@ function countVertex(graphName) {
 	});
 }
 
-function queryGraph(graphName) {
-	console.log('query graph: ' + graphName);
-
-	fetch('/queryGraph/' + graphName + '/' + 5000 + '/' + 5, {method: 'GET'})
+function queryGraph(graphName, batchSize, iteration) {
+	fetch('/queryGraph/' + graphName + '/' + batchSize + '/' + iteration, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
 			console.log('query graph successful');
@@ -58,11 +57,17 @@ function queryGraph(graphName) {
 	})
 	.then(function(responseJSON) {
 		console.log("rendering response");
-		vertexArray = JSON.parse(JSON.stringify(responseJSON));
+		// CAUTION BUG out of memory is still an issue
+		vertexArray.push.apply(vertexArray, JSON.parse(JSON.stringify(responseJSON)));
+		// vertexArray = JSON.parse(JSON.stringify(responseJSON));
 		console.log("vertex array length " + vertexArray.length);
-		document.getElementById('mainDiv').innerHTML = JSON.stringify(vertexArray[0]);
-		// document.getElementById('mainDiv').innerHTML = "done";
-		console.log("rendering finished");
+		if (iteration < totalIteration) {
+			queryGraph(graphName, batchSize, ++iteration);
+		} else {
+			document.getElementById('mainDiv').innerHTML = JSON.stringify(vertexArray[0]);
+			// document.getElementById('mainDiv').innerHTML = "done";
+			console.log("rendering finished");	
+		}
 	})
 	.catch(function(err) {
 		document.getElementById('mainDiv').innerHTML = graphName + " not found";

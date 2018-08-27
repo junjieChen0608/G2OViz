@@ -44,7 +44,7 @@ app.get('/countVertex/:graphName', (req, res) => {
 	});
 })
 
-// query graph name
+// query graph
 app.get('/queryGraph/:graphName/:batchSize/:iteration', (req, res) => {
 	var graphName = req.params.graphName;
 	var batchSize = req.params.batchSize;
@@ -55,18 +55,9 @@ app.get('/queryGraph/:graphName/:batchSize/:iteration', (req, res) => {
 
 	res.set('Content-Type', 'application/json');
 	var cursor = db.collection('vertices').find({graph_name: graphName});
-	
-	cursor.count((err, count) => {
-		if (err) {
-			console.log(err);
-		}
-
-		if (count > 0) {
-			cursor.stream().pipe(JSONStream.stringify())
-		  		   		   .pipe(res);
-		} else {
-			res.sendStatus(404);
-		}
-	});
-		
+	cursor.skip(iteration * batchSize)
+		  .limit(parseInt(batchSize, 10))
+		  .stream()
+		  .pipe(JSONStream.stringify())
+		  .pipe(res);
 });
