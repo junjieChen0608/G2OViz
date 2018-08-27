@@ -1,6 +1,7 @@
 /******************************************* client-side **************************************************/
 console.log('client running');
 
+var vertexArray;
 const button = document.getElementById('render');
 button.addEventListener('click', function(event) {
 	counter = 0;
@@ -9,9 +10,13 @@ button.addEventListener('click', function(event) {
 	if (graphName[0] == '/') {
 		graphName = replaceSlash(graphName);
 	}
-	console.log('query graph: ' + graphName);
 
-	fetch('/queryGraph/' + graphName, {method: 'GET'})
+	queryGraph(graphName);
+});
+
+function queryGraph(graphName) {
+	console.log('query graph: ' + graphName);
+	fetch('/queryGraph/' + graphName + '/' + 5, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
 			console.log('query graph successful');
@@ -21,7 +26,9 @@ button.addEventListener('click', function(event) {
 	})
 	.then(function(responseJSON) {
 		console.log("rendering response");
-		document.getElementById('mainDiv').innerHTML = JSON.stringify(responseJSON[0]);
+		vertexArray = JSON.parse(JSON.stringify(responseJSON));
+		console.log("vertex array length " + vertexArray.length);
+		document.getElementById('mainDiv').innerHTML = JSON.stringify(vertexArray[0]);
 		// document.getElementById('mainDiv').innerHTML = "done";
 		console.log("rendering finished");
 	})
@@ -29,8 +36,7 @@ button.addEventListener('click', function(event) {
 		document.getElementById('mainDiv').innerHTML = graphName + " not found";
 		console.log(err);
 	});
-});
-
+}
 
 function replaceSlash(input) {
 	console.log("replacing slash for " + input);
@@ -38,7 +44,6 @@ function replaceSlash(input) {
 }
 
 /******************************************* three.js **************************************************/
-
 var container, stats;
 var camera, controls, scene, renderer;
 var raycaster;

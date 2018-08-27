@@ -31,9 +31,11 @@ app.get('/', (req, res) => {
 });
 
 // query graph name
-app.get('/queryGraph/:graphName', (req, res) => {
+app.get('/queryGraph/:graphName/:iteration', (req, res) => {
 	var graphName = req.params.graphName;
+	var iteration = req.params.iteration;
 	console.log("graph name to query: " + graphName);
+	console.log("iteration " + iteration);
 
 	res.set('Content-Type', 'application/json');
 	var cursor = db.collection('vertices').find({graph_name: graphName});
