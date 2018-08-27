@@ -3,8 +3,10 @@ console.log('server running');
 const express = require('express');
 const MongoClient = require('mongodb').MongoClient;
 const app = express();
+const JSONStream = require('JSONStream');
 
 app.use(express.static('public'));
+app.use(express.static(__dirname + '/build'));
 
 let db;
 const url = 'mongodb://localhost:27017/';
@@ -29,19 +31,24 @@ app.get('/', (req, res) => {
 });
 
 // query graph name
-app.post('/queryGraph/:graphName', (req, res) => {
+app.get('/queryGraph/:graphName', (req, res) => {
 	var graphName = req.params.graphName;
 	console.log("graph name to query: " + graphName);
-	db.collection('graphs').findOne({name: graphName},(err, result) => {
+
+	res.set('Content-Type', 'application/json');
+	var cursor = db.collection('vertices').find({graph_name: graphName});
+	
+	cursor.count((err, count) => {
 		if (err) {
-			return console.log(err);
+			console.log(err);
 		}
 
-		console.log("callback " + result);
-		if (result !== null) {
-			res.send(result);
+		if (count > 0) {
+			cursor.stream().pipe(JSONStream.stringify())
+		  		   		   .pipe(res);
 		} else {
 			res.sendStatus(404);
 		}
 	});
+		
 });
