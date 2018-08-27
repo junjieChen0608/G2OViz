@@ -30,12 +30,28 @@ app.get('/', (req, res) => {
 	res.sendFile(__dirname + '/index.html');
 });
 
-// query graph name
-app.get('/queryGraph/:graphName/:iteration', (req, res) => {
+// count total vertex
+app.get('/countVertex/:graphName', (req, res) => {
 	var graphName = req.params.graphName;
+	console.log("graph to count: " + graphName);
+	db.collection('vertices').countDocuments({graph_name: graphName}, (err, count) => {
+		if (err) {
+			console.log(err);
+		}
+		console.log("count " + count + " vertices");
+
+		res.send((count).toString());
+	});
+})
+
+// query graph name
+app.get('/queryGraph/:graphName/:batchSize/:iteration', (req, res) => {
+	var graphName = req.params.graphName;
+	var batchSize = req.params.batchSize;
 	var iteration = req.params.iteration;
-	console.log("graph name to query: " + graphName);
-	console.log("iteration " + iteration);
+	console.log("graph to query: " + graphName
+				+ "\nbatch size: " + batchSize
+				+ "\niteration: " + iteration);
 
 	res.set('Content-Type', 'application/json');
 	var cursor = db.collection('vertices').find({graph_name: graphName});

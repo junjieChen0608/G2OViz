@@ -1,7 +1,11 @@
 /******************************************* client-side **************************************************/
 console.log('client running');
 
-var vertexArray;
+var vertexArray = [];
+const batchSize = 5000;
+var iteration = 0;
+var totalVertex = 0;
+
 const button = document.getElementById('render');
 button.addEventListener('click', function(event) {
 	counter = 0;
@@ -10,13 +14,41 @@ button.addEventListener('click', function(event) {
 	if (graphName[0] == '/') {
 		graphName = replaceSlash(graphName);
 	}
-
-	queryGraph(graphName);
+	// query the given graph to count total vertex count
+	countVertex(graphName);
+	// calculate iterations
+	// query the graph in a loop
+	// queryGraph(graphName);
 });
+
+function countVertex(graphName) {
+	console.log('count graph ' + graphName);
+
+	fetch('/countVertex/' + graphName, {method: 'GET'})
+	.then(function(response) {
+		if (response.ok) {
+			console.log('count vertex successful');
+			return response.json();
+		}
+		throw new Error('count vertex failed');
+	})
+	.then(function(responseJSON) {
+		document.getElementById('mainDiv').innerHTML = JSON.stringify(responseJSON);
+		totalVertex = JSON.stringify(responseJSON);
+		console.log("total vertex " + totalVertex);
+		iteration = Math.floor(totalVertex / batchSize) + ((totalVertex % batchSize) ? 1 : 0);
+		console.log("need to iterate " + iteration);
+	})
+	.catch(function(err) {
+		document.getElementById('mainDiv').innerHTML = graphName + " not found";
+		console.log(err);
+	});
+}
 
 function queryGraph(graphName) {
 	console.log('query graph: ' + graphName);
-	fetch('/queryGraph/' + graphName + '/' + 5, {method: 'GET'})
+
+	fetch('/queryGraph/' + graphName + '/' + 5000 + '/' + 5, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
 			console.log('query graph successful');
