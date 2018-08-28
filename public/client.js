@@ -102,7 +102,7 @@ init();
 animate();
 
 function initControls() {
-	controls = new THREE.TrackballControls(camera);
+	controls = new THREE.TrackballControls(camera, renderer.domElement);
 	controls.rotateSpeed = 1.0;
 	controls.zoomSpeed = 1.2;
 	controls.panSpeed = 0.8;
@@ -118,7 +118,6 @@ function initInvariants() {
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
 	camera.position.z = 7000;
 
-	initControls();
 
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xd8d8d8);
@@ -141,6 +140,7 @@ function initInvariants() {
 	container.appendChild( stats.dom );
 
 	renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
+	initControls();
 	window.addEventListener('resize', onWindowResize);
 }
 
