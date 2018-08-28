@@ -94,17 +94,18 @@ var colorEdge = 0x7f0026;
 var colorOnSelect = 0xefdc04;
 
 var startTime = Date.now();
-// init();
-// animate();
+// TODO render the scene batch by batch
+init();
+animate();
 
 function init() {
 
 	container = document.getElementById( "container" );
 
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
-	camera.position.z = 1000;
+	camera.position.z = 7000;
 
-	controls = new THREE.TrackballControls( camera );
+	controls = new THREE.TrackballControls(camera);
 	controls.rotateSpeed = 1.0;
 	controls.zoomSpeed = 1.2;
 	controls.panSpeed = 0.8;
@@ -115,11 +116,11 @@ function init() {
 
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xd8d8d8);
-	scene.add( new THREE.AmbientLight( 0x555555 ) );
+	scene.add(new THREE.AmbientLight(0x555555));
 
-	var light = new THREE.SpotLight( 0xffffff, 1.5 );
-	light.position.set( 0, 500, 2000 );
-	scene.add( light );
+	var light = new THREE.SpotLight(0xffffff, 1.5);
+	light.position.set(0, 2000, 2000);
+	scene.add(light);
 
 	var geometriesDrawn = [];
 
@@ -128,7 +129,7 @@ function init() {
 
 	// generate n random geometries to the scene
 	// this should be changed to load vertex from MongoDB
-	for ( var i = 0; i < 50; i ++ ) {
+	for ( var i = 0; i < 100; i ++ ) {
 
 		var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
 
@@ -178,8 +179,8 @@ function onDocumentMouseMove(event) {
 
 	// event.preventDefault();
 
-	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+	mouse.x = ( event.offsetX / window.innerWidth ) * 2 - 1;
+	mouse.y = - ( event.offsetY / window.innerHeight ) * 2 + 1;
 
 }
 
@@ -231,7 +232,7 @@ function drawEdge(geometriesDrawn) {
 		var vi = geometriesDrawn[i];
 		var posI = vi.attributes.position.array;
 
-		for (var j = 0; j < geometriesDrawn.length; ++j) {
+		for (var j = 0; j < (geometriesDrawn.length / 4); ++j) {
 			if (i != j) {
 				var vj = geometriesDrawn[j];
 				var posJ = vj.attributes.position.array;
