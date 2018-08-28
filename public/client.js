@@ -38,6 +38,8 @@ function countVertex(graphName) {
 		// query the graph in a loop
 		if (totalVertex > 0) {
 			queryGraph(graphName, batchSize, 0);
+		} else {
+			throw new Error('count vertex failed');		
 		}
 	})
 	.catch(function(err) {
@@ -58,11 +60,12 @@ function queryGraph(graphName, batchSize, iteration) {
 	.then(function(responseJSON) {
 		console.log("rendering response");
 		// CAUTION BUG out of memory is still an issue
-		vertexArray.push.apply(vertexArray, JSON.parse(JSON.stringify(responseJSON)));
+		// TODO consume response here to render
+		// vertexArray.push.apply(vertexArray, JSON.parse(JSON.stringify(responseJSON)));
 		// vertexArray = JSON.parse(JSON.stringify(responseJSON));
 		console.log("vertex array length " + vertexArray.length);
-		if (iteration < totalIteration) {
-			queryGraph(graphName, batchSize, ++iteration);
+		if (++iteration < totalIteration) {
+			queryGraph(graphName, batchSize, iteration);
 		} else {
 			document.getElementById('mainDiv').innerHTML = JSON.stringify(vertexArray[0]);
 			// document.getElementById('mainDiv').innerHTML = "done";
@@ -82,7 +85,7 @@ function replaceSlash(input) {
 
 /******************************************* three.js **************************************************/
 var container, stats;
-var camera, controls, scene, renderer;
+var camera, controls, scene, renderer, light;
 var raycaster;
 var currentIntersected;
 
@@ -98,13 +101,7 @@ var startTime = Date.now();
 init();
 animate();
 
-function init() {
-
-	container = document.getElementById( "container" );
-
-	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
-	camera.position.z = 7000;
-
+function initControls() {
 	controls = new THREE.TrackballControls(camera);
 	controls.rotateSpeed = 1.0;
 	controls.zoomSpeed = 1.2;
@@ -113,23 +110,51 @@ function init() {
 	controls.noPan = false;
 	controls.staticMoving = true;
 	controls.dynamicDampingFactor = 0.3;
+}
+
+function initInvariants() {
+	container = document.getElementById( "container" );
+
+	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
+	camera.position.z = 7000;
+
+	initControls();
 
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xd8d8d8);
 	scene.add(new THREE.AmbientLight(0x555555));
 
-	var light = new THREE.SpotLight(0xffffff, 1.5);
+	light = new THREE.SpotLight(0xffffff, 1.5);
 	light.position.set(0, 2000, 2000);
 	scene.add(light);
 
-	var geometriesDrawn = [];
+	
+	raycaster = new THREE.Raycaster();
+	raycaster.linePrecision = 3;
 
+	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	renderer.setPixelRatio( window.devicePixelRatio );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	container.appendChild( renderer.domElement );
+
+	stats = new Stats();
+	container.appendChild( stats.dom );
+
+	renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
+	window.addEventListener('resize', onWindowResize);
+}
+
+function init() {
+
+	initInvariants();
+	var geometriesDrawn = [];
 	var matrix = new THREE.Matrix4();
 	var quaternion = new THREE.Quaternion();
 
-	// generate n random geometries to the scene
+	// TODO generate n random geometries to the scene
 	// this should be changed to load vertex from MongoDB
-	for ( var i = 0; i < 100; i ++ ) {
+	// TODO use instancing to reduce memory pressure
+	for ( var i = 0; i < 50; i ++ ) {
 
 		var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
 
@@ -161,18 +186,6 @@ function init() {
 
 	drawEdge(geometriesDrawn);
 
-	raycaster = new THREE.Raycaster();
-	raycaster.linePrecision = 3;
-
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
-	renderer.setPixelRatio( window.devicePixelRatio );
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	container.appendChild( renderer.domElement );
-
-	stats = new Stats();
-	container.appendChild( stats.dom );
-
-	renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
 }
 
 function onDocumentMouseMove(event) {
@@ -184,12 +197,24 @@ function onDocumentMouseMove(event) {
 
 }
 
+function onWindowResize(event) {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
 // animate loop, render the scene
-var frameID;
 function animate() {
-	frameID = requestAnimationFrame( animate );
+	requestAnimationFrame( animate );
 	render();
 	stats.update();
+}
+
+function render() {
+	controls.update();
+	highlight();
+	renderer.render( scene, camera );
 }
 
 function highlight() {
@@ -219,23 +244,19 @@ function highlight() {
 	}
 }
 
-function render() {
-	controls.update();
-	highlight();
-	renderer.render( scene, camera );
-}
 
 // construct a fully connected graph
 // TODO this should be modified when backend is setup
+// TODO use instancing to reduce memory pressure
 function drawEdge(geometriesDrawn) {
 	for (var i = 0; i < geometriesDrawn.length; ++i) {
 		var vi = geometriesDrawn[i];
-		var posI = vi.attributes.position.array;
+		var posI = vi.getAttribute('position').array;
 
-		for (var j = 0; j < (geometriesDrawn.length / 4); ++j) {
+		for (var j = 0; j < (geometriesDrawn.length / 10); ++j) {
 			if (i != j) {
 				var vj = geometriesDrawn[j];
-				var posJ = vj.attributes.position.array;
+				var posJ = vj.getAttribute('position').array;
 				var points = [posI[0], posI[1], posI[2],
 							  posJ[0], posJ[1], posJ[2]];
 
