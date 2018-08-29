@@ -85,7 +85,7 @@ function queryGraph(graphName, batchSize, iteration) {
 				var quaternion = new THREE.Quaternion();
 				var color = new THREE.Color();
 
-				for ( var i = 0; i < 50000; i ++ ) {
+				for ( var i = 0; i < 1000; i ++ ) {
 
 					var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
 					var position = new THREE.Vector3();
@@ -98,11 +98,6 @@ function queryGraph(graphName, batchSize, iteration) {
 					rotation.y = Math.random() * 2 * Math.PI;
 					rotation.z = Math.random() * 2 * Math.PI;
 
-					var scale = new THREE.Vector3(15, 15, 15);
-					// scale.x = Math.random() * 200 + 100;
-					// scale.y = Math.random() * 200 + 100;
-					// scale.z = Math.random() * 200 + 100;
-
 					quaternion.setFromEuler( rotation, false );
 					matrix.compose( position, quaternion, scale );
 
@@ -110,7 +105,7 @@ function queryGraph(graphName, batchSize, iteration) {
 
 					// give the geometry's vertices a random color, to be displayed
 
-					applyVertexColors( geometry, color.setHex( Math.random() * 0xffffff ) );
+					applyVertexColors( geometry, color.setHex( colorVertex) );
 
 					geometriesDrawn.push( geometry );
 
@@ -135,6 +130,7 @@ function queryGraph(graphName, batchSize, iteration) {
 				scene.add( objects );
 
 				pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( geometriesPicking ), pickingMaterial ) );
+				drawLines();
 
 			}
 
@@ -176,11 +172,12 @@ var geometriesPicking = [];
 var mouse = new THREE.Vector2();
 
 var color = new THREE.Color();
-var colorVertex = 0x135cd3;
-var colorEdge = 0x7f0026;
-var colorOnSelect = 0xefdc04;
+const colorVertex = 0x135cd3;
+const colorEdge = 0x7f0026;
+const colorOnSelect = 0xefdc04;
 
-var startTime = Date.now();
+const scale = new THREE.Vector3(15, 15, 15);
+
 // TODO render the scene batch by batch
 // init();
 // animate();
@@ -394,4 +391,33 @@ function drawEdge(geometriesDrawn) {
 			}
 		}
 	}
+}
+
+// TODO implement line selection
+function drawLines() {
+	var lineDrawn = [];
+	var min = -5000;
+	var max = 5000;
+	for (var i = 0; i < 50; ++i) {
+		var x = getRandomInt(min, max);
+		var y = getRandomInt(min, max);
+		var z = getRandomInt(min, max);
+		points = [];
+		points.push(x, y, z);
+		points.push(x + getRandomInt(min, max),
+				  y + getRandomInt(min, max),
+				  z + getRandomInt(min, max));
+
+		var lineGeometry = new THREE.BufferGeometry();
+		lineGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+		lineDrawn.push(lineGeometry);
+	}
+	
+	var lineMaterial = new THREE.LineBasicMaterial({color: colorEdge});
+	var lineObject = new THREE.Line(THREE.BufferGeometryUtils.mergeBufferGeometries(lineDrawn), lineMaterial);
+	scene.add(lineObject);
+}
+
+function getRandomInt(min, max) {
+	return Math.random() * (max - min) + min;
 }
