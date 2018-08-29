@@ -65,73 +65,17 @@ function queryGraph(graphName, batchSize, iteration) {
 		// vertexArray = JSON.parse(JSON.stringify(responseJSON));
 
 		/******************************************* crazy *******************************************/
-
-			var container, stats;
-			var camera, controls, scene, renderer;
-			var pickingData = [], pickingTexture, pickingScene;
-			var highlightBox;
-
-			var mouse = new THREE.Vector2();
-			var offset = new THREE.Vector3( 10, 10, 10 );
-
 			init();
 			animate();
 
 			function init() {
-
-				container = document.getElementById( "container" );
-
-				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 100000 );
-				camera.position.z = 1000;
-
-				controls = new THREE.TrackballControls( camera );
-				controls.rotateSpeed = 1.0;
-				controls.zoomSpeed = 1.2;
-				controls.panSpeed = 0.8;
-				controls.noZoom = false;
-				controls.noPan = false;
-				controls.staticMoving = true;
-				controls.dynamicDampingFactor = 0.3;
-
-				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0xffffff );
-
-				pickingScene = new THREE.Scene();
-				pickingTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
-				pickingTexture.texture.minFilter = THREE.LinearFilter;
-
-				scene.add( new THREE.AmbientLight( 0x555555 ) );
-
-				var light = new THREE.SpotLight( 0xffffff, 1.5 );
-				light.position.set( 0, 500, 2000 );
-				scene.add( light );
-
-				var pickingMaterial = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors } );
-				var defaultMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true, vertexColors: THREE.VertexColors, shininess: 0	} );
-
-				function applyVertexColors( geometry, color ) {
-
-					var position = geometry.attributes.position;
-					var colors = [];
-
-					for ( var i = 0; i < position.count; i ++ ) {
-
-						colors.push( color.r, color.g, color.b );
-
-					}
-
-					geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
-
-				}
-
-				var geometriesDrawn = [];
-				var geometriesPicking = [];
-
+				initInvariants();
+				
 				var matrix = new THREE.Matrix4();
 				var quaternion = new THREE.Quaternion();
 				var color = new THREE.Color();
 
-				for ( var i = 0; i < 10000; i ++ ) {
+				for ( var i = 0; i < 50000; i ++ ) {
 
 					var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
 					var position = new THREE.Vector3();
@@ -182,87 +126,6 @@ function queryGraph(graphName, batchSize, iteration) {
 
 				pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( geometriesPicking ), pickingMaterial ) );
 
-				highlightBox = new THREE.Mesh(
-					new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3),
-					new THREE.MeshLambertMaterial( { color: 0xffff00 }
-				) );
-				scene.add( highlightBox );
-
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				container.appendChild( renderer.domElement );
-
-				stats = new Stats();
-				container.appendChild( stats.dom );
-
-				renderer.domElement.addEventListener( 'mousemove', onMouseMove );
-
-			}
-
-			//
-
-			function onMouseMove( e ) {
-
-				mouse.x = e.clientX;
-				mouse.y = e.clientY;
-
-			}
-
-			function animate() {
-
-				requestAnimationFrame( animate );
-				render();
-				stats.update();
-
-			}
-
-			function pick() {
-
-				//render the picking scene off-screen
-
-				renderer.render( pickingScene, camera, pickingTexture );
-
-				//create buffer for reading single pixel
-
-				var pixelBuffer = new Uint8Array( 4 );
-
-				//read the pixel under the mouse from the texture
-
-				renderer.readRenderTargetPixels( pickingTexture, mouse.x, pickingTexture.height - mouse.y, 1, 1, pixelBuffer );
-
-				//interpret the pixel as an ID
-
-				var id = ( pixelBuffer[ 0 ] << 16 ) | ( pixelBuffer[ 1 ] << 8 ) | ( pixelBuffer[ 2 ] );
-				var data = pickingData[ id ];
-				if ( data) {
-					//move our highlightBox so that it surrounds the picked object
-
-					if ( data.position && data.rotation && data.scale ){
-
-						highlightBox.position.copy( data.position );
-						highlightBox.rotation.copy( data.rotation );
-						highlightBox.scale.copy( data.scale ).add( offset );
-						highlightBox.visible = true;
-
-					}
-
-				} else {
-
-					highlightBox.visible = false;
-
-				}
-
-			}
-
-			function render() {
-
-				controls.update();
-
-				pick();
-
-				renderer.render( scene, camera );
-
 			}
 
 		/******************************************* crazy *******************************************/
@@ -289,8 +152,16 @@ function replaceSlash(input) {
 /******************************************* three.js **************************************************/
 var container, stats;
 var camera, controls, scene, renderer, light;
+var pickingData = [], pickingTexture, pickingScene;
+var highlightBox;
 var raycaster;
 var currentIntersected;
+
+var pickingMaterial;
+var defaultMaterial;
+
+var geometriesDrawn = [];
+var geometriesPicking = [];
 
 var mouse = new THREE.Vector2();
 
@@ -321,11 +192,18 @@ function initInvariants() {
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
 	camera.position.z = 7000;
 
+	pickingScene = new THREE.Scene();
+	pickingTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
+	pickingTexture.texture.minFilter = THREE.LinearFilter;
+
+	pickingMaterial = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors } );
+	defaultMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true, vertexColors: THREE.VertexColors, shininess: 0	} );
 
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xd8d8d8);
 	scene.add(new THREE.AmbientLight(0x555555));
 
+	scene.add( new THREE.AmbientLight( 0x555555 ) );
 	light = new THREE.SpotLight(0xffffff, 1.5);
 	light.position.set(0, 2000, 2000);
 	scene.add(light);
@@ -334,7 +212,7 @@ function initInvariants() {
 	raycaster = new THREE.Raycaster();
 	raycaster.linePrecision = 3;
 
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	renderer = new THREE.WebGLRenderer( { antialias: false } );
 	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	container.appendChild( renderer.domElement );
@@ -342,62 +220,72 @@ function initInvariants() {
 	stats = new Stats();
 	container.appendChild( stats.dom );
 
-	renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
+	highlightBox = new THREE.Mesh(
+		new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3),
+		new THREE.MeshLambertMaterial( { color: 0xffff00 }
+	) );
+	scene.add(highlightBox);
+	// renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
+	renderer.domElement.addEventListener( 'mousemove', onMouseMove );
 	initControls();
 	window.addEventListener('resize', onWindowResize);
 }
 
-function init() {
+// function init() {
 
-	initInvariants();
-	var geometriesDrawn = [];
-	var matrix = new THREE.Matrix4();
-	var quaternion = new THREE.Quaternion();
+// 	initInvariants();
+// 	var geometriesDrawn = [];
+// 	var matrix = new THREE.Matrix4();
+// 	var quaternion = new THREE.Quaternion();
 
-	// TODO generate n random geometries to the scene
-	// this should be changed to load vertex from MongoDB
-	// TODO use instancing to reduce memory pressure
-	for ( var i = 0; i < 50; i ++ ) {
+// 	// TODO generate n random geometries to the scene
+// 	// this should be changed to load vertex from MongoDB
+// 	// TODO use instancing to reduce memory pressure
+// 	for ( var i = 0; i < 50; i ++ ) {
 
-		var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
+// 		var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
 
-		var position = new THREE.Vector3();
-		position.x = Math.random() * 10000 - 5000;
-		position.y = Math.random() * 6000 - 3000;
-		position.z = Math.random() * 8000 - 4000;
+// 		var position = new THREE.Vector3();
+// 		position.x = Math.random() * 10000 - 5000;
+// 		position.y = Math.random() * 6000 - 3000;
+// 		position.z = Math.random() * 8000 - 4000;
 
-		// TODO need to rotate according to quaternion from mongodb
-		var rotation = new THREE.Euler();
-		// rotation.x = Math.random() * 2 * Math.PI;
-		// rotation.y = Math.random() * 2 * Math.PI;
-		// rotation.z = Math.random() * 2 * Math.PI;
+// 		// TODO need to rotate according to quaternion from mongodb
+// 		var rotation = new THREE.Euler();
+// 		// rotation.x = Math.random() * 2 * Math.PI;
+// 		// rotation.y = Math.random() * 2 * Math.PI;
+// 		// rotation.z = Math.random() * 2 * Math.PI;
 
-		var scale = new THREE.Vector3(10, 10, 10);
+// 		var scale = new THREE.Vector3(10, 10, 10);
 
-		quaternion.setFromEuler( rotation, false );
-		matrix.compose( position, quaternion, scale );
-		geometry.applyMatrix( matrix );
+// 		quaternion.setFromEuler( rotation, false );
+// 		matrix.compose( position, quaternion, scale );
+// 		geometry.applyMatrix( matrix );
 
-		var mesh = new THREE.Mesh(geometry);
-		mesh.material.color.setHex(colorVertex);
-		// TODO more user data from mongodb to go into this object
-		mesh.userData = {"type": "vertex"};
-		scene.add(mesh);
+// 		var mesh = new THREE.Mesh(geometry);
+// 		mesh.material.color.setHex(colorVertex);
+// 		// TODO more user data from mongodb to go into this object
+// 		mesh.userData = {"type": "vertex"};
+// 		scene.add(mesh);
 
-		geometriesDrawn.push( geometry );
-	}
+// 		geometriesDrawn.push( geometry );
+// 	}
 
-	drawEdge(geometriesDrawn);
+// 	drawEdge(geometriesDrawn);
 
-}
+// }
 
 function onDocumentMouseMove(event) {
 
 	// event.preventDefault();
-
 	mouse.x = ( event.offsetX / window.innerWidth ) * 2 - 1;
 	mouse.y = - ( event.offsetY / window.innerHeight ) * 2 + 1;
 
+}
+
+function onMouseMove(event) {
+	mouse.x = event.clientX;
+	mouse.y = event.clientY;
 }
 
 function onWindowResize(event) {
@@ -416,7 +304,8 @@ function animate() {
 
 function render() {
 	controls.update();
-	highlight();
+	// highlight();
+	pick();
 	renderer.render( scene, camera );
 }
 
@@ -448,31 +337,6 @@ function highlight() {
 }
 
 
-// construct a fully connected graph
-// TODO this should be modified when backend is setup
-// TODO use instancing to reduce memory pressure
-function drawEdge(geometriesDrawn) {
-	for (var i = 0; i < geometriesDrawn.length; ++i) {
-		var vi = geometriesDrawn[i];
-		var posI = vi.getAttribute('position').array;
-
-		for (var j = 0; j < (geometriesDrawn.length / 10); ++j) {
-			if (i != j) {
-				var vj = geometriesDrawn[j];
-				var posJ = vj.getAttribute('position').array;
-				var points = [posI[0], posI[1], posI[2],
-							  posJ[0], posJ[1], posJ[2]];
-
-				var lineGeometry = new THREE.BufferGeometry();
-				lineGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-				var lineObject = new THREE.Line(lineGeometry);
-				lineObject.material.color.setHex(colorEdge);
-				lineObject.userData = {"type": "edge"};
-				scene.add(lineObject);
-			}
-		}
-	}
-}
 
 // highlight intersected element
 function highlightIntersect(currentIntersected) {
@@ -497,5 +361,81 @@ function resetPrevIntersect(currentIntersected) {
 	} else if (interType == "vertex") {
 		console.log("reset vertex");
 		currentIntersected.material.color.setHex(colorVertex);
+	}
+}
+
+function applyVertexColors( geometry, color ) {
+
+	var position = geometry.attributes.position;
+	var colors = [];
+
+	for ( var i = 0; i < position.count; i ++ ) {
+
+		colors.push( color.r, color.g, color.b );
+
+	}
+
+	geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+
+}
+
+function pick() {
+	//render the picking scene off-screen
+	console.log("x " + mouse.x
+				+ "\ny " + mouse.y);
+	renderer.render( pickingScene, camera, pickingTexture );
+
+	//create buffer for reading single pixel
+
+	var pixelBuffer = new Uint8Array( 4 );
+
+	//read the pixel under the mouse from the texture
+
+	renderer.readRenderTargetPixels( pickingTexture, mouse.x, pickingTexture.height - mouse.y, 1, 1, pixelBuffer );
+
+	//interpret the pixel as an ID
+
+	var id = ( pixelBuffer[ 0 ] << 16 ) | ( pixelBuffer[ 1 ] << 8 ) | ( pixelBuffer[ 2 ] );
+	var data = pickingData[ id ];
+	if ( data) {
+
+		//move our highlightBox so that it surrounds the picked object
+
+		if ( data.position && data.rotation && data.scale ){
+			highlightBox.position.copy( data.position );
+			highlightBox.rotation.copy( data.rotation );
+			highlightBox.scale.copy( data.scale );
+			highlightBox.visible = true;
+		}
+
+	} else {
+		console.log("pick failed");
+		highlightBox.visible = false;
+	}
+}
+
+// construct a fully connected graph
+// TODO this should be modified when backend is setup
+// TODO use instancing to reduce memory pressure
+function drawEdge(geometriesDrawn) {
+	for (var i = 0; i < geometriesDrawn.length; ++i) {
+		var vi = geometriesDrawn[i];
+		var posI = vi.getAttribute('position').array;
+
+		for (var j = 0; j < (geometriesDrawn.length / 10); ++j) {
+			if (i != j) {
+				var vj = geometriesDrawn[j];
+				var posJ = vj.getAttribute('position').array;
+				var points = [posI[0], posI[1], posI[2],
+							  posJ[0], posJ[1], posJ[2]];
+
+				var lineGeometry = new THREE.BufferGeometry();
+				lineGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+				var lineObject = new THREE.Line(lineGeometry);
+				lineObject.material.color.setHex(colorEdge);
+				lineObject.userData = {"type": "edge"};
+				scene.add(lineObject);
+			}
+		}
 	}
 }
