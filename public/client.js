@@ -6,6 +6,7 @@ const batchSize = 5000;
 var totalIteration = 0;
 var totalVertex = 0;
 
+
 const button = document.getElementById('render');
 button.addEventListener('click', function(event) {
 	counter = 0;
@@ -16,6 +17,15 @@ button.addEventListener('click', function(event) {
 	}
 	// query the given graph to count total vertex count
 	countVertex(graphName);
+});
+
+const input = document.getElementById('graphName');
+input.addEventListener('keyup', function(event) {
+	event.preventDefault();
+
+	if (event.keyCode === 13) {
+		button.click();
+	}
 });
 
 function countVertex(graphName) {
@@ -88,7 +98,7 @@ function queryGraph(graphName, batchSize, iteration) {
 					rotation.y = Math.random() * 2 * Math.PI;
 					rotation.z = Math.random() * 2 * Math.PI;
 
-					var scale = new THREE.Vector3(10, 10, 10);
+					var scale = new THREE.Vector3(15, 15, 15);
 					// scale.x = Math.random() * 200 + 100;
 					// scale.y = Math.random() * 200 + 100;
 					// scale.z = Math.random() * 200 + 100;
@@ -205,7 +215,7 @@ function initInvariants() {
 
 	scene.add( new THREE.AmbientLight( 0x555555 ) );
 	light = new THREE.SpotLight(0xffffff, 1.5);
-	light.position.set(0, 2000, 2000);
+	light.position.set(10000, 10000, 10000);
 	scene.add(light);
 
 	
@@ -228,52 +238,7 @@ function initInvariants() {
 	// renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
 	renderer.domElement.addEventListener( 'mousemove', onMouseMove );
 	initControls();
-	window.addEventListener('resize', onWindowResize);
 }
-
-// function init() {
-
-// 	initInvariants();
-// 	var geometriesDrawn = [];
-// 	var matrix = new THREE.Matrix4();
-// 	var quaternion = new THREE.Quaternion();
-
-// 	// TODO generate n random geometries to the scene
-// 	// this should be changed to load vertex from MongoDB
-// 	// TODO use instancing to reduce memory pressure
-// 	for ( var i = 0; i < 50; i ++ ) {
-
-// 		var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
-
-// 		var position = new THREE.Vector3();
-// 		position.x = Math.random() * 10000 - 5000;
-// 		position.y = Math.random() * 6000 - 3000;
-// 		position.z = Math.random() * 8000 - 4000;
-
-// 		// TODO need to rotate according to quaternion from mongodb
-// 		var rotation = new THREE.Euler();
-// 		// rotation.x = Math.random() * 2 * Math.PI;
-// 		// rotation.y = Math.random() * 2 * Math.PI;
-// 		// rotation.z = Math.random() * 2 * Math.PI;
-
-// 		var scale = new THREE.Vector3(10, 10, 10);
-
-// 		quaternion.setFromEuler( rotation, false );
-// 		matrix.compose( position, quaternion, scale );
-// 		geometry.applyMatrix( matrix );
-
-// 		var mesh = new THREE.Mesh(geometry);
-// 		mesh.material.color.setHex(colorVertex);
-// 		// TODO more user data from mongodb to go into this object
-// 		mesh.userData = {"type": "vertex"};
-// 		scene.add(mesh);
-
-// 		geometriesDrawn.push( geometry );
-// 	}
-
-// 	drawEdge(geometriesDrawn);
-
-// }
 
 function onDocumentMouseMove(event) {
 
@@ -284,15 +249,9 @@ function onDocumentMouseMove(event) {
 }
 
 function onMouseMove(event) {
-	mouse.x = event.clientX;
-	mouse.y = event.clientY;
-}
-
-function onWindowResize(event) {
-	camera.aspect = window.innerWidth / window.innerHeight;
-	camera.updateProjectionMatrix();
-
-	renderer.setSize( window.innerWidth, window.innerHeight );
+	// use offset x and y to handle scrollbar offset
+	mouse.x = event.offsetX;
+	mouse.y = event.offsetY;
 }
 
 // animate loop, render the scene
@@ -381,8 +340,6 @@ function applyVertexColors( geometry, color ) {
 
 function pick() {
 	//render the picking scene off-screen
-	console.log("x " + mouse.x
-				+ "\ny " + mouse.y);
 	renderer.render( pickingScene, camera, pickingTexture );
 
 	//create buffer for reading single pixel
@@ -409,7 +366,6 @@ function pick() {
 		}
 
 	} else {
-		console.log("pick failed");
 		highlightBox.visible = false;
 	}
 }
