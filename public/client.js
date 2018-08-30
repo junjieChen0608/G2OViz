@@ -111,7 +111,6 @@ function queryGraph(graphName, batchSize, iteration) {
 
 					geometry = geometry.clone();
 					// give the geometry's vertices a color corresponding to the "id"
-
 					applyVertexColors( geometry, color.setHex( i ) );
 
 					geometriesPicking.push( geometry );
@@ -167,9 +166,11 @@ var pickingMaterial;
 var defaultMaterial;
 
 var geometriesDrawn = [];
+var lineDrawn = [];
 var geometriesPicking = [];
 
 var mouse = new THREE.Vector2();
+var rayTracer = new THREE.Vector2();
 
 var color = new THREE.Color();
 const colorVertex = 0x135cd3;
@@ -232,7 +233,7 @@ function initInvariants() {
 		new THREE.MeshLambertMaterial( { color: 0xffff00 }
 	) );
 	scene.add(highlightBox);
-	// renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
+	renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
 	renderer.domElement.addEventListener( 'mousemove', onMouseMove );
 	initControls();
 }
@@ -240,8 +241,8 @@ function initInvariants() {
 function onDocumentMouseMove(event) {
 
 	// event.preventDefault();
-	mouse.x = ( event.offsetX / window.innerWidth ) * 2 - 1;
-	mouse.y = - ( event.offsetY / window.innerHeight ) * 2 + 1;
+	rayTracer.x = ( event.offsetX / window.innerWidth ) * 2 - 1;
+	rayTracer.y = - ( event.offsetY / window.innerHeight ) * 2 + 1;
 
 }
 
@@ -260,16 +261,16 @@ function animate() {
 
 function render() {
 	controls.update();
-	// highlight();
+	highlight();
 	pick();
 	renderer.render( scene, camera );
 }
 
 function highlight() {
 
-	raycaster.setFromCamera(mouse, camera);
+	raycaster.setFromCamera(rayTracer, camera);
 
-	var intersects = raycaster.intersectObjects(scene.children);
+	var intersects = raycaster.intersectObjects(lineDrawn);
 
 	// intersected
 	if ( intersects.length > 0 ) {
@@ -301,10 +302,7 @@ function highlightIntersect(currentIntersected) {
 	if (interType == "edge") {
 		console.log("over edge");
 		currentIntersected.material.linewidth = 5;
-	} else if (interType == "vertex") {
-		console.log("over vertex");
-		currentIntersected.material.color.setHex(colorOnSelect);
-		
+		scene.add(currentIntersected);
 	}
 }
 
@@ -314,9 +312,7 @@ function resetPrevIntersect(currentIntersected) {
 	if (interType == "edge") {
 		console.log("reset edge");
 		currentIntersected.material.linewidth = 1;
-	} else if (interType == "vertex") {
-		console.log("reset vertex");
-		currentIntersected.material.color.setHex(colorVertex);
+		scene.remove(currentIntersected);
 	}
 }
 
@@ -395,7 +391,7 @@ function drawEdge(geometriesDrawn) {
 
 // TODO implement line selection
 function drawLines() {
-	var lineDrawn = [];
+	var lineGeometries = [];
 	var min = -5000;
 	var max = 5000;
 	for (var i = 0; i < 50; ++i) {
@@ -404,17 +400,22 @@ function drawLines() {
 		var z = getRandomInt(min, max);
 		points = [];
 		points.push(x, y, z);
+		points.push(x, y, z);
 		points.push(x + getRandomInt(min, max),
 				  y + getRandomInt(min, max),
 				  z + getRandomInt(min, max));
 
 		var lineGeometry = new THREE.BufferGeometry();
 		lineGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-		lineDrawn.push(lineGeometry);
+		var lineObject = new THREE.Line(lineGeometry);
+		lineObject.material.color.setHex(colorEdge);
+		lineObject.userData = {"type": "edge"};
+		lineDrawn.push(lineObject);
+		lineGeometries.push(lineGeometry);
 	}
 	
 	var lineMaterial = new THREE.LineBasicMaterial({color: colorEdge});
-	var lineObject = new THREE.Line(THREE.BufferGeometryUtils.mergeBufferGeometries(lineDrawn), lineMaterial);
+	var lineObject = new THREE.Line(THREE.BufferGeometryUtils.mergeBufferGeometries(lineGeometries), lineMaterial);
 	scene.add(lineObject);
 }
 
