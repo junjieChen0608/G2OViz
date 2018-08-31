@@ -47,6 +47,10 @@ function countVertex(graphName) {
 		console.log("need to iterate " + totalIteration);
 		// query the graph in a loop
 		if (totalVertex > 0) {
+			// init all geometry arrays
+			geometriesDrawn = [];
+			geometriesPicking = [];
+			lineDrawn = [];
 			queryGraph(graphName, batchSize, 0);
 		} else {
 			throw new Error('count vertex failed');		
@@ -75,63 +79,47 @@ function queryGraph(graphName, batchSize, iteration) {
 		// vertexArray = JSON.parse(JSON.stringify(responseJSON));
 
 		/******************************************* crazy *******************************************/
-			init();
-			animate();
 
-			function init() {
-				initInvariants();
-				
-				var matrix = new THREE.Matrix4();
-				var quaternion = new THREE.Quaternion();
-				var color = new THREE.Color();
+			var matrix = new THREE.Matrix4();
+			var quaternion = new THREE.Quaternion();
+			var color = new THREE.Color();
 
-				for ( var i = 0; i < 1000; i ++ ) {
+			for ( var i = 0; i < 100; i ++ ) {
 
-					var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
-					var position = new THREE.Vector3();
-					position.x = Math.random() * 10000 - 5000;
-					position.y = Math.random() * 6000 - 3000;
-					position.z = Math.random() * 8000 - 4000;
+				var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
+				var position = new THREE.Vector3();
+				position.x = Math.random() * 10000 - 5000;
+				position.y = Math.random() * 6000 - 3000;
+				position.z = Math.random() * 8000 - 4000;
 
-					var rotation = new THREE.Euler();
-					rotation.x = Math.random() * 2 * Math.PI;
-					rotation.y = Math.random() * 2 * Math.PI;
-					rotation.z = Math.random() * 2 * Math.PI;
+				var rotation = new THREE.Euler();
+				rotation.x = Math.random() * 2 * Math.PI;
+				rotation.y = Math.random() * 2 * Math.PI;
+				rotation.z = Math.random() * 2 * Math.PI;
 
-					quaternion.setFromEuler( rotation, false );
-					matrix.compose( position, quaternion, scale );
+				quaternion.setFromEuler( rotation, false );
+				matrix.compose( position, quaternion, scale );
 
-					geometry.applyMatrix( matrix );
+				geometry.applyMatrix( matrix );
 
-					// give the geometry's vertices a random color, to be displayed
+				// give the geometry's vertices a random color, to be displayed
 
-					applyVertexColors( geometry, color.setHex( colorVertex) );
+				applyVertexColors( geometry, color.setHex( colorVertex) );
 
-					geometriesDrawn.push( geometry );
+				geometriesDrawn.push( geometry );
 
-					geometry = geometry.clone();
-					// give the geometry's vertices a color corresponding to the "id"
+				geometry = geometry.clone();
+				// give the geometry's vertices a color corresponding to the "id"
 
-					applyVertexColors( geometry, color.setHex( i ) );
+				applyVertexColors( geometry, color.setHex( i ) );
 
-					geometriesPicking.push( geometry );
+				geometriesPicking.push( geometry );
 
-					pickingData[ i ] = {
-
-						position: position,
-						rotation: rotation,
-						scale: scale
-
-					};
-
-				}
-
-				var objects = new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( geometriesDrawn ), defaultMaterial );
-				scene.add( objects );
-
-				pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( geometriesPicking ), pickingMaterial ) );
-				// drawLines();
-				drawEdge(geometriesDrawn);
+				pickingData[ i ] = {
+					position: position,
+					rotation: rotation,
+					scale: scale
+				};
 
 			}
 
@@ -142,6 +130,11 @@ function queryGraph(graphName, batchSize, iteration) {
 		} else {
 			document.getElementById('mainDiv').innerHTML = JSON.stringify(vertexArray[0]);
 			// document.getElementById('mainDiv').innerHTML = "done";
+			var objects = new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( geometriesDrawn ), defaultMaterial );
+			scene.add( objects );
+
+			pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( geometriesPicking ), pickingMaterial ) );
+			drawEdge(geometriesDrawn);
 			console.log("rendering finished");	
 		}
 	})
@@ -163,6 +156,7 @@ var pickingData = [], pickingTexture, pickingScene;
 var highlightBox;
 var raycaster;
 var currentIntersected;
+var interval = 0;
 
 var pickingMaterial;
 var defaultMaterial;
@@ -182,8 +176,12 @@ const colorOnSelect = 0xefdc04;
 const scale = new THREE.Vector3(15, 15, 15);
 
 // TODO render the scene batch by batch
-// init();
-// animate();
+init();
+animate();
+
+function init() {
+	initInvariants();
+}
 
 function initControls() {
 	controls = new THREE.TrackballControls(camera, renderer.domElement);
@@ -256,7 +254,11 @@ function animate() {
 
 function render() {
 	controls.update();
-	highlight();
+	// cast ray on lines in 30 FPS
+	if (++interval == 30) {
+		highlight();
+		interval = 0;
+	}
 	pick();
 	renderer.render( scene, camera );
 }
@@ -288,37 +290,16 @@ function highlight() {
 	}
 }
 
-
-
 // highlight intersected element
 function highlightIntersect() {
 	currentIntersected.material.linewidth = 5;
 	scene.add(currentIntersected);
-	// var interType = currentIntersected.userData.type;
-
-	// if (interType == "edge") {
-	// 	console.log("over edge");
-	// 	currentIntersected.material.linewidth = 5;
-	// } else if (interType == "vertex") {
-	// 	console.log("over vertex");
-	// 	currentIntersected.material.color.setHex(colorOnSelect);
-		
-	// }
 }
 
 // reset previously highlighted element
 function resetPrevIntersect() {
 	currentIntersected.material.linewidth = 1;
 	scene.remove(currentIntersected);
-	// var interType = currentIntersected.userData.type;
-
-	// if (interType == "edge") {
-	// 	console.log("reset edge");
-	// 	currentIntersected.material.linewidth = 1;
-	// } else if (interType == "vertex") {
-	// 	console.log("reset vertex");
-	// 	currentIntersected.material.color.setHex(colorVertex);
-	// }
 }
 
 function applyVertexColors( geometry, color ) {
