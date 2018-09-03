@@ -127,12 +127,21 @@ function queryGraph(graphName, batchSize, iteration) {
 
 			// }
 
-			// drawEdge(geometriesDrawn);
+			// drawRandomEdges(geometriesDrawn);
 
 		/******************************************* crazy *******************************************/
-		var objects = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geometriesDrawn), defaultMaterial);
-		scene.add(objects);
+		if (geometriesDrawn.length) {
+			var mergedVertexObjects = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geometriesDrawn), defaultMaterial);
+			scene.add(mergedVertexObjects);	
+		}
 		geometriesDrawn = [];
+
+		if (edgesDrawn.length) {
+			var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgesDrawn), lineMaterial);
+			scene.add(mergedEdgeObject);
+		}
+		edgesDrawn = [];
+
 		console.log("vertex array length " + vertexArray.length);
 		if (++iteration < totalIteration) {
 			queryGraph(graphName, batchSize, iteration);
@@ -155,6 +164,18 @@ function replaceSlash(input) {
 	return input.replace(/\//g, '%2F');
 }
 
+// draw line
+function drawEdge(fromPos, toPos) {
+	var points = [
+		fromPos[0], fromPos[1], fromPos[2],
+		toPos[0], toPos[1], toPos[2],
+	];
+
+	var edgeGeometry = new THREE.BufferGeometry();
+	edgeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+	edgesDrawn.push(edgeGeometry);
+}
+
 // handles edges array
 function parseEdgesArray(edges, pos) {
 	console.log("found edges\nedges length " + edges.length);
@@ -164,6 +185,7 @@ function parseEdgesArray(edges, pos) {
 		console.log("lead to " + leadTo);
 		if (verticesDrawn[leadTo]) {
 			console.log(leadTo + " is already drawn, linking...");
+			drawEdge(pos, verticesDrawn[leadTo]);
 		} else {
 			console.log(leadTo + " is not drawn, add to oweEdges map");
 			if (!(leadTo in oweEdges)) {
@@ -175,10 +197,24 @@ function parseEdgesArray(edges, pos) {
 	}
 }
 
-// handles poses JSON
+function payTheDebt(vid, pos) {
+	// if this vid owes other vertices edge
+	if (vid in oweEdges) {
+		console.log("vid " + vid + " paying debt...");
+		while(oweEdges[vid].length) {
+			drawEdge(pos, oweEdges[vid].pop());
+		}
+		// delete the entry in verticesDraw
+		delete oweEdges[vid];
+	}
+}
+
+// handle poses JSON
 function parsePoses(poses, vid) {
 	console.log("found poses");
+
 	var firstPose, ori, pos;
+
 	if (poses !== undefined) {
 		for (var pose in poses) {
 			firstPose = pose;
@@ -189,7 +225,7 @@ function parsePoses(poses, vid) {
 							+ "\nori: " + ori
 							+ "\npos: " + pos);
 
-				var geometry = new THREE.ConeBufferGeometry(1, 3, 8, 1, false, 0, 6.3);
+				var geometry = new THREE.ConeBufferGeometry(0.5, 1, 8, 1, false, 0, 6.3);
 
 				var matrix = new THREE.Matrix4();
 				var position = new THREE.Vector3(pos[0], pos[1], pos[2]);
@@ -217,6 +253,7 @@ function parsePoses(poses, vid) {
 				++universalCounter;
 				verticesDrawn[vid] = pos;
 				// TODO if this vid is in oweEdges, need to clear the corresponding entry and draw edges
+				payTheDebt(vid, pos);
 				return pos;
 			}
 
@@ -263,6 +300,7 @@ var currentIntersected;
 
 var pickingMaterial;
 var defaultMaterial;
+var lineMaterial;
 
 var geometriesDrawn = [];
 var geometriesPicking = [];
@@ -313,7 +351,8 @@ function initInvariants() {
 
 	pickingMaterial = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors } );
 	defaultMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true, vertexColors: THREE.VertexColors, shininess: 0	} );
-
+	lineMaterial = new THREE.LineBasicMaterial({color: colorEdge});
+	
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xd8d8d8);
 	scene.add(new THREE.AmbientLight(0x555555));
@@ -332,9 +371,6 @@ function initInvariants() {
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	container.appendChild( renderer.domElement );
 
-	if (stats) {
-		stats.dom = null;
-	}
 	stats = new Stats();
 	container.appendChild( stats.dom );
 
@@ -457,7 +493,7 @@ function pick() {
 // construct a fully connected graph
 // TODO this should be modified when backend is setup
 // TODO use instancing to reduce memory pressure
-function drawEdge(geometriesDrawn) {
+function drawRandomEdges(geometriesDrawn) {
 	var lineGeometries = [];
 	for (var i = 0; i < geometriesDrawn.length; ++i) {
 		var vi = geometriesDrawn[i];
@@ -480,7 +516,6 @@ function drawEdge(geometriesDrawn) {
 		}
 	}
 
-	var lineMaterial = new THREE.LineBasicMaterial({color: colorEdge});
 	var mergedLineObject = new THREE.Line(THREE.BufferGeometryUtils.mergeBufferGeometries(lineGeometries), lineMaterial);
 	scene.add(mergedLineObject);
 }
