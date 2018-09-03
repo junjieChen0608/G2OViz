@@ -30,7 +30,6 @@ input.addEventListener('keyup', function(event) {
 
 function countVertex(graphName) {
 	console.log('count graph ' + graphName);
-	vertexArray = [];
 	fetch('/countVertex/' + graphName, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
@@ -50,7 +49,10 @@ function countVertex(graphName) {
 			// init all geometry arrays
 			geometriesDrawn = [];
 			geometriesPicking = [];
-			lineDrawn = [];
+			pickingData = [];
+			edgesDrawn = [];
+			init();
+			animate();
 			queryGraph(graphName, batchSize, 0);
 		} else {
 			throw new Error('count vertex failed');		
@@ -73,68 +75,72 @@ function queryGraph(graphName, batchSize, iteration) {
 	})
 	.then(function(responseJSON) {
 		console.log("rendering response");
-		// CAUTION BUG out of memory is still an issue
 		// TODO consume response here to render
 		// vertexArray.push.apply(vertexArray, JSON.parse(JSON.stringify(responseJSON)));
-		// vertexArray = JSON.parse(JSON.stringify(responseJSON));
+		vertexArray = JSON.parse(JSON.stringify(responseJSON));
+		for (var i = 0; i < vertexArray.length; ++i) {
+			var vertex = vertexArray[i];
+			parseVertex(vertex);
+		}
 
 		/******************************************* crazy *******************************************/
 
-			var matrix = new THREE.Matrix4();
-			var quaternion = new THREE.Quaternion();
-			var color = new THREE.Color();
+			// var matrix = new THREE.Matrix4();
+			// var quaternion = new THREE.Quaternion();
 
-			for ( var i = 0; i < 100; i ++ ) {
+			// for ( var i = 0; i < 100; i ++ ) {
 
-				var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
-				var position = new THREE.Vector3();
-				position.x = Math.random() * 10000 - 5000;
-				position.y = Math.random() * 6000 - 3000;
-				position.z = Math.random() * 8000 - 4000;
+			// 	var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
+			// 	var position = new THREE.Vector3();
+			// 	position.x = Math.random() * 10000 - 5000;
+			// 	position.y = Math.random() * 6000 - 3000;
+			// 	position.z = Math.random() * 8000 - 4000;
 
-				var rotation = new THREE.Euler();
-				rotation.x = Math.random() * 2 * Math.PI;
-				rotation.y = Math.random() * 2 * Math.PI;
-				rotation.z = Math.random() * 2 * Math.PI;
+			// 	var rotation = new THREE.Euler();
+			// 	rotation.x = Math.random() * 2 * Math.PI;
+			// 	rotation.y = Math.random() * 2 * Math.PI;
+			// 	rotation.z = Math.random() * 2 * Math.PI;
 
-				quaternion.setFromEuler( rotation, false );
-				matrix.compose( position, quaternion, scale );
+			// 	quaternion.setFromEuler( rotation, false );
+			// 	matrix.compose( position, quaternion, scale );
 
-				geometry.applyMatrix( matrix );
+			// 	geometry.applyMatrix( matrix );
 
-				// give the geometry's vertices a random color, to be displayed
+			// 	// give the geometry's vertices a random color, to be displayed
 
-				applyVertexColors( geometry, color.setHex( colorVertex) );
+			// 	applyVertexColors( geometry, color.setHex( colorVertex) );
 
-				geometriesDrawn.push( geometry );
+			// 	geometriesDrawn.push( geometry );
 
-				geometry = geometry.clone();
-				// give the geometry's vertices a color corresponding to the "id"
+			// 	geometry = geometry.clone();
+			// 	// give the geometry's vertices a color corresponding to the "id"
 
-				applyVertexColors( geometry, color.setHex( i ) );
+			// 	applyVertexColors( geometry, color.setHex( i ) );
 
-				geometriesPicking.push( geometry );
+			// 	geometriesPicking.push( geometry );
 
-				pickingData[ i ] = {
-					position: position,
-					rotation: rotation,
-					scale: scale
-				};
+			// 	pickingData[ i ] = {
+			// 		position: position,
+			// 		rotation: rotation,
+			// 		scale: scale
+			// 	};
 
-			}
+			// }
+
+			// drawEdge(geometriesDrawn);
 
 		/******************************************* crazy *******************************************/
+		var objects = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geometriesDrawn), defaultMaterial);
+		scene.add(objects);
+		geometriesDrawn = [];
 		console.log("vertex array length " + vertexArray.length);
 		if (++iteration < totalIteration) {
 			queryGraph(graphName, batchSize, iteration);
 		} else {
 			document.getElementById('mainDiv').innerHTML = JSON.stringify(vertexArray[0]);
 			// document.getElementById('mainDiv').innerHTML = "done";
-			var objects = new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( geometriesDrawn ), defaultMaterial );
-			scene.add( objects );
 
-			pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( geometriesPicking ), pickingMaterial ) );
-			drawEdge(geometriesDrawn);
+			// pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( geometriesPicking ), pickingMaterial ) );			
 			console.log("rendering finished");	
 		}
 	})
@@ -149,6 +155,104 @@ function replaceSlash(input) {
 	return input.replace(/\//g, '%2F');
 }
 
+// handles edges array
+function parseEdgesArray(edges, pos) {
+	console.log("found edges\nedges length " + edges.length);
+	for (var i = 0; i < edges.length; ++i) {
+		let edge = edges[i];
+		let leadTo = JSON.stringify(edge["to"]);
+		console.log("lead to " + leadTo);
+		if (verticesDrawn[leadTo]) {
+			console.log(leadTo + " is already drawn, linking...");
+		} else {
+			console.log(leadTo + " is not drawn, add to oweEdges map");
+			if (!(leadTo in oweEdges)) {
+				console.log("creating entry for " + leadTo);
+				oweEdges[leadTo] = [];
+			}
+			oweEdges[leadTo].push(pos);
+		}
+	}
+}
+
+// handles poses JSON
+function parsePoses(poses, vid) {
+	console.log("found poses");
+	var firstPose, ori, pos;
+	if (poses !== undefined) {
+		for (var pose in poses) {
+			firstPose = pose;
+			ori = poses[pose].ori;
+			pos = poses[pose].pos;
+			if (ori !== undefined && pos !== undefined) {
+				console.log("first pose " + firstPose
+							+ "\nori: " + ori
+							+ "\npos: " + pos);
+
+				var geometry = new THREE.ConeBufferGeometry(1, 3, 8, 1, false, 0, 6.3);
+
+				var matrix = new THREE.Matrix4();
+				var position = new THREE.Vector3(pos[0], pos[1], pos[2]);
+				var quaternion = new THREE.Quaternion(ori[1], ori[2], ori[3], ori[0]);
+				var rotation = new THREE.Euler().setFromQuaternion(quaternion);
+
+				matrix.compose(position, quaternion, scale);
+				geometry.applyMatrix(matrix);
+				// give the geometry's vertices color
+				applyVertexColors(geometry, color.setHex(colorVertex));
+				geometriesDrawn.push(geometry);
+
+				// the rest of this section servers the pick function
+				geometry = geometry.clone();
+				// give the geometry's vertices a color corresponding to the id
+				applyVertexColors(geometry, color.setHex(universalCounter));
+
+				// geometriesPicking.push(geometry);
+
+				// pickingData[universalCounter] = {
+				// 	position: position,
+				// 	rotation: rotation,
+				// 	vid: vid
+				// };
+				++universalCounter;
+				verticesDrawn[vid] = pos;
+				// TODO if this vid is in oweEdges, need to clear the corresponding entry and draw edges
+				return pos;
+			}
+
+		}
+
+	} else {
+		console.log("pose is undefined");
+	}
+	return undefined;
+}
+
+function parseVertex(vertex) {
+	var edges;
+	var poses;
+	var pos;
+	console.log("parsing " + vertex.vid);
+	// iterate on all field in this JSON
+	for (var item in vertex) {
+		if (item === "edges") {
+			edges = vertex[item];
+		} else if (item === "poses") {
+			poses = vertex[item];
+		}
+	}
+	// check poses and edges separately
+	// as some vertices do not have edges field
+	if (poses) {
+		pos = parsePoses(poses, vertex.vid);
+	}
+
+	// connect edges to neighbors
+	if (edges && pos) {
+		parseEdgesArray(edges, pos);
+	}
+}
+
 /******************************************* three.js **************************************************/
 var container, stats;
 var camera, controls, scene, renderer, light;
@@ -156,14 +260,15 @@ var pickingData = [], pickingTexture, pickingScene;
 var highlightBox;
 var raycaster;
 var currentIntersected;
-var interval = 0;
 
 var pickingMaterial;
 var defaultMaterial;
 
 var geometriesDrawn = [];
 var geometriesPicking = [];
-var lineDrawn = [];
+var edgesDrawn = [];
+var verticesDrawn = {};
+var oweEdges = {};
 
 var mouse = new THREE.Vector2();
 var rayTracer = new THREE.Vector2();
@@ -173,11 +278,13 @@ const colorVertex = 0x135cd3;
 const colorEdge = 0x7f0026;
 const colorOnSelect = 0xefdc04;
 
-const scale = new THREE.Vector3(15, 15, 15);
+const scale = new THREE.Vector3(1, 1, 1);
+
+var universalCounter = 0;
 
 // TODO render the scene batch by batch
-init();
-animate();
+// init();
+// animate();
 
 function init() {
 	initInvariants();
@@ -198,7 +305,7 @@ function initInvariants() {
 	container = document.getElementById( "container" );
 
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
-	camera.position.z = 7000;
+	camera.position.z = 5000;
 
 	pickingScene = new THREE.Scene();
 	pickingTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
@@ -225,10 +332,13 @@ function initInvariants() {
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	container.appendChild( renderer.domElement );
 
+	if (stats) {
+		stats.dom = null;
+	}
 	stats = new Stats();
 	container.appendChild( stats.dom );
 
-	highlightBox = new THREE.Mesh(new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3),
+	highlightBox = new THREE.Mesh(new THREE.ConeBufferGeometry(1.5, 5.5, 8, 1, false, 0, 6.3),
 								  new THREE.MeshLambertMaterial( { color: 0xffff00 }));
 	scene.add(highlightBox);
 	renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
@@ -254,11 +364,6 @@ function animate() {
 
 function render() {
 	controls.update();
-	// cast ray on lines in 30 FPS
-	if (++interval == 30) {
-		highlight();
-		interval = 0;
-	}
 	pick();
 	renderer.render( scene, camera );
 }
@@ -267,7 +372,7 @@ function highlight() {
 
 	raycaster.setFromCamera(rayTracer, camera);
 
-	var intersects = raycaster.intersectObjects(lineDrawn);
+	var intersects = raycaster.intersectObjects(edgesDrawn);
 
 	// intersected
 	if ( intersects.length > 0 ) {
@@ -308,9 +413,7 @@ function applyVertexColors( geometry, color ) {
 	var colors = [];
 
 	for ( var i = 0; i < position.count; i ++ ) {
-
 		colors.push( color.r, color.g, color.b );
-
 	}
 
 	geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
@@ -333,16 +436,18 @@ function pick() {
 
 	var id = ( pixelBuffer[ 0 ] << 16 ) | ( pixelBuffer[ 1 ] << 8 ) | ( pixelBuffer[ 2 ] );
 	var data = pickingData[ id ];
-	if ( data) {
+	if (data) {
 
 		//move our highlightBox so that it surrounds the picked object
 
-		if ( data.position && data.rotation && data.scale ){
-			highlightBox.position.copy( data.position );
-			highlightBox.rotation.copy( data.rotation );
-			highlightBox.scale.copy( data.scale );
+		if (data.position && data.rotation && data.vid){
+			highlightBox.position.copy(data.position);
+			highlightBox.rotation.copy(data.rotation);
+			highlightBox.scale.copy(scale);
 			highlightBox.visible = true;
 		}
+		console.log("vid: " + data.vid
+					+ "\npos: " + JSON.stringify(data.position));
 
 	} else {
 		highlightBox.visible = false;
@@ -370,7 +475,7 @@ function drawEdge(geometriesDrawn) {
 				lineGeometries.push(lineGeometry);
 				var lineObject = new THREE.Line(lineGeometry);
 				lineObject.material.color.setHex(colorEdge);
-				lineDrawn.push(lineObject);
+				edgesDrawn.push(lineObject);
 			}
 		}
 	}
