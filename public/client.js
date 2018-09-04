@@ -15,10 +15,11 @@ button.addEventListener('click', function(event) {
 	if (graphName[0] == '/') {
 		graphName = replaceSlash(graphName);
 	}
-	// query the given graph to count total vertex count
+	
 	countVertex(graphName);
 });
 
+// enable press enter to query
 const input = document.getElementById('graphName');
 input.addEventListener('keyup', function(event) {
 	event.preventDefault();
@@ -28,8 +29,10 @@ input.addEventListener('keyup', function(event) {
 	}
 });
 
+// query the given graph to count total vertices
 function countVertex(graphName) {
 	console.log('count graph ' + graphName);
+
 	fetch('/countVertex/' + graphName, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
@@ -42,15 +45,13 @@ function countVertex(graphName) {
 		// document.getElementById('mainDiv').innerHTML = JSON.stringify(responseJSON);
 		totalVertex = JSON.stringify(responseJSON);
 		console.log("total vertex " + totalVertex);
+		
 		totalIteration = Math.floor(totalVertex / batchSize) + ((totalVertex % batchSize) ? 1 : 0);
 		console.log("need to iterate " + totalIteration);
+		
 		// query the graph in a loop
 		if (totalVertex > 0) {
 			// init all geometry arrays
-			geometriesDrawn = [];
-			geometriesPicking = [];
-			pickingData = [];
-			edgesDrawn = [];
 			init();
 			animate();
 			queryGraph(graphName, batchSize, 0);
@@ -83,53 +84,6 @@ function queryGraph(graphName, batchSize, iteration) {
 			parseVertex(vertex);
 		}
 
-		/******************************************* crazy *******************************************/
-
-			// var matrix = new THREE.Matrix4();
-			// var quaternion = new THREE.Quaternion();
-
-			// for ( var i = 0; i < 100; i ++ ) {
-
-			// 	var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
-			// 	var position = new THREE.Vector3();
-			// 	position.x = Math.random() * 10000 - 5000;
-			// 	position.y = Math.random() * 6000 - 3000;
-			// 	position.z = Math.random() * 8000 - 4000;
-
-			// 	var rotation = new THREE.Euler();
-			// 	rotation.x = Math.random() * 2 * Math.PI;
-			// 	rotation.y = Math.random() * 2 * Math.PI;
-			// 	rotation.z = Math.random() * 2 * Math.PI;
-
-			// 	quaternion.setFromEuler( rotation, false );
-			// 	matrix.compose( position, quaternion, scale );
-
-			// 	geometry.applyMatrix( matrix );
-
-			// 	// give the geometry's vertices a random color, to be displayed
-
-			// 	applyVertexColors( geometry, color.setHex( colorVertex) );
-
-			// 	geometriesDrawn.push( geometry );
-
-			// 	geometry = geometry.clone();
-			// 	// give the geometry's vertices a color corresponding to the "id"
-
-			// 	applyVertexColors( geometry, color.setHex( i ) );
-
-			// 	geometriesPicking.push( geometry );
-
-			// 	pickingData[ i ] = {
-			// 		position: position,
-			// 		rotation: rotation,
-			// 		scale: scale
-			// 	};
-
-			// }
-
-			// drawRandomEdges(geometriesDrawn);
-
-		/******************************************* crazy *******************************************/
 		if (geometriesDrawn.length) {
 			var mergedVertexObjects = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geometriesDrawn), defaultMaterial);
 			scene.add(mergedVertexObjects);	
@@ -182,14 +136,14 @@ function parseEdgesArray(edges, pos) {
 	for (var i = 0; i < edges.length; ++i) {
 		let edge = edges[i];
 		let leadTo = JSON.stringify(edge["to"]);
-		console.log("lead to " + leadTo);
+		// console.log("lead to " + leadTo);
 		if (verticesDrawn[leadTo]) {
-			console.log(leadTo + " is already drawn, linking...");
+			// console.log(leadTo + " is already drawn, linking...");
 			drawEdge(pos, verticesDrawn[leadTo]);
 		} else {
-			console.log(leadTo + " is not drawn, add to oweEdges map");
+			// console.log(leadTo + " is not drawn, add to oweEdges map");
 			if (!(leadTo in oweEdges)) {
-				console.log("creating entry for " + leadTo);
+				// console.log("creating entry for " + leadTo);
 				oweEdges[leadTo] = [];
 			}
 			oweEdges[leadTo].push(pos);
@@ -221,9 +175,9 @@ function parsePoses(poses, vid) {
 			ori = poses[pose].ori;
 			pos = poses[pose].pos;
 			if (ori !== undefined && pos !== undefined) {
-				console.log("first pose " + firstPose
-							+ "\nori: " + ori
-							+ "\npos: " + pos);
+				// console.log("first pose " + firstPose
+				// 			+ "\nori: " + ori
+				// 			+ "\npos: " + pos);
 
 				var geometry = new THREE.ConeBufferGeometry(0.5, 1, 8, 1, false, 0, 6.3);
 
@@ -305,6 +259,7 @@ var lineMaterial;
 var geometriesDrawn = [];
 var geometriesPicking = [];
 var edgesDrawn = [];
+
 var verticesDrawn = {};
 var oweEdges = {};
 
@@ -316,7 +271,7 @@ const colorVertex = 0x135cd3;
 const colorEdge = 0x7f0026;
 const colorOnSelect = 0xefdc04;
 
-const scale = new THREE.Vector3(1, 1, 1);
+const scale = new THREE.Vector3(0.7, 0.7, 0.7);
 
 var universalCounter = 0;
 
@@ -325,6 +280,10 @@ var universalCounter = 0;
 // animate();
 
 function init() {
+	geometriesDrawn = [];
+	geometriesPicking = [];
+	pickingData = [];
+	edgesDrawn = [];
 	initInvariants();
 }
 
@@ -343,7 +302,7 @@ function initInvariants() {
 	container = document.getElementById( "container" );
 
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
-	camera.position.z = 5000;
+	camera.position.z = 3000;
 
 	pickingScene = new THREE.Scene();
 	pickingTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
@@ -362,6 +321,9 @@ function initInvariants() {
 	light.position.set(10000, 10000, 10000);
 	scene.add(light);
 
+	highlightBox = new THREE.Mesh(new THREE.ConeBufferGeometry(1.5, 5.5, 8, 1, false, 0, 6.3),
+								  new THREE.MeshLambertMaterial( { color: 0xffff00 }));
+	scene.add(highlightBox);
 	
 	raycaster = new THREE.Raycaster();
 	raycaster.linePrecision = 3;
@@ -374,9 +336,6 @@ function initInvariants() {
 	stats = new Stats();
 	container.appendChild( stats.dom );
 
-	highlightBox = new THREE.Mesh(new THREE.ConeBufferGeometry(1.5, 5.5, 8, 1, false, 0, 6.3),
-								  new THREE.MeshLambertMaterial( { color: 0xffff00 }));
-	scene.add(highlightBox);
 	renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
 	initControls();
 }
@@ -490,32 +449,76 @@ function pick() {
 	}
 }
 
-// construct a fully connected graph
-// TODO this should be modified when backend is setup
-// TODO use instancing to reduce memory pressure
-function drawRandomEdges(geometriesDrawn) {
-	var lineGeometries = [];
-	for (var i = 0; i < geometriesDrawn.length; ++i) {
-		var vi = geometriesDrawn[i];
-		var posI = vi.getAttribute('position').array;
 
-		for (var j = 0; j < (geometriesDrawn.length / 10); ++j) {
-			if (i != j) {
-				var vj = geometriesDrawn[j];
-				var posJ = vj.getAttribute('position').array;
-				var points = [posI[0], posI[1], posI[2],
-							  posJ[0], posJ[1], posJ[2]];
 
-				var lineGeometry = new THREE.BufferGeometry();
-				lineGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-				lineGeometries.push(lineGeometry);
-				var lineObject = new THREE.Line(lineGeometry);
-				lineObject.material.color.setHex(colorEdge);
-				edgesDrawn.push(lineObject);
-			}
-		}
-	}
 
-	var mergedLineObject = new THREE.Line(THREE.BufferGeometryUtils.mergeBufferGeometries(lineGeometries), lineMaterial);
-	scene.add(mergedLineObject);
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/******************************************* crazy *******************************************/
+
+	// var matrix = new THREE.Matrix4();
+	// var quaternion = new THREE.Quaternion();
+
+	// for ( var i = 0; i < 100; i ++ ) {
+
+	// 	var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
+	// 	var position = new THREE.Vector3();
+	// 	position.x = Math.random() * 10000 - 5000;
+	// 	position.y = Math.random() * 6000 - 3000;
+	// 	position.z = Math.random() * 8000 - 4000;
+
+	// 	var rotation = new THREE.Euler();
+	// 	rotation.x = Math.random() * 2 * Math.PI;
+	// 	rotation.y = Math.random() * 2 * Math.PI;
+	// 	rotation.z = Math.random() * 2 * Math.PI;
+
+	// 	quaternion.setFromEuler( rotation, false );
+	// 	matrix.compose( position, quaternion, scale );
+
+	// 	geometry.applyMatrix( matrix );
+
+	// 	// give the geometry's vertices a random color, to be displayed
+
+	// 	applyVertexColors( geometry, color.setHex( colorVertex) );
+
+	// 	geometriesDrawn.push( geometry );
+
+	// 	geometry = geometry.clone();
+	// 	// give the geometry's vertices a color corresponding to the "id"
+
+	// 	applyVertexColors( geometry, color.setHex( i ) );
+
+	// 	geometriesPicking.push( geometry );
+
+	// 	pickingData[ i ] = {
+	// 		position: position,
+	// 		rotation: rotation,
+	// 		scale: scale
+	// 	};
+
+	// }
+
+	// drawRandomEdges(geometriesDrawn);
+
+/******************************************* crazy *******************************************/
