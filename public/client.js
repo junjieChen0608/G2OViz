@@ -65,6 +65,7 @@ function countVertex(graphName) {
 	});
 }
 
+// query given graph, response is a batch size of vertices
 function queryGraph(graphName, batchSize, iteration) {
 	fetch('/queryGraph/' + graphName + '/' + batchSize + '/' + iteration, {method: 'GET'})
 	.then(function(response) {
@@ -76,34 +77,38 @@ function queryGraph(graphName, batchSize, iteration) {
 	})
 	.then(function(responseJSON) {
 		console.log("rendering response");
-		// TODO consume response here to render
-		// vertexArray.push.apply(vertexArray, JSON.parse(JSON.stringify(responseJSON)));
+		// consume response to render
 		vertexArray = JSON.parse(JSON.stringify(responseJSON));
 		for (var i = 0; i < vertexArray.length; ++i) {
 			var vertex = vertexArray[i];
 			parseVertex(vertex);
 		}
 
-		if (geometriesDrawn.length) {
-			var mergedVertexObjects = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geometriesDrawn), defaultMaterial);
+		// merge all drawn vertex geometries to render a single mesh
+		if (vertexGeometriesDrawn.length) {
+			var mergedVertexObjects = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(vertexGeometriesDrawn), defaultMaterial);
 			scene.add(mergedVertexObjects);	
 		}
-		geometriesDrawn = [];
+		vertexGeometriesDrawn = [];
 
-		if (edgesDrawn.length) {
-			var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgesDrawn), lineMaterial);
+		// merge all drawn edge geometries to render a single line segment
+		if (edgeGeometriesDrawn.length) {
+			var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn), lineMaterial);
 			scene.add(mergedEdgeObject);
 		}
-		edgesDrawn = [];
+		edgeGeometriesDrawn = [];
 
 		console.log("vertex array length " + vertexArray.length);
+
 		if (++iteration < totalIteration) {
+			// recursive call, query next batch of vertex
 			queryGraph(graphName, batchSize, iteration);
 		} else {
+			// query is finished, update both page and console
 			document.getElementById('mainDiv').innerHTML = JSON.stringify(vertexArray[0]);
 			// document.getElementById('mainDiv').innerHTML = "done";
 
-			// pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( geometriesPicking ), pickingMaterial ) );			
+			// pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( vertexGeometriesPicking ), pickingMaterial ) );			
 			console.log("rendering finished");	
 		}
 	})
@@ -127,7 +132,7 @@ function drawEdge(fromPos, toPos) {
 
 	var edgeGeometry = new THREE.BufferGeometry();
 	edgeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-	edgesDrawn.push(edgeGeometry);
+	edgeGeometriesDrawn.push(edgeGeometry);
 }
 
 // handles edges array
@@ -190,14 +195,14 @@ function parsePoses(poses, vid) {
 				geometry.applyMatrix(matrix);
 				// give the geometry's vertices color
 				applyVertexColors(geometry, color.setHex(colorVertex));
-				geometriesDrawn.push(geometry);
+				vertexGeometriesDrawn.push(geometry);
 
 				// the rest of this section servers the pick function
 				geometry = geometry.clone();
 				// give the geometry's vertices a color corresponding to the id
 				applyVertexColors(geometry, color.setHex(universalCounter));
 
-				// geometriesPicking.push(geometry);
+				// vertexGeometriesPicking.push(geometry);
 
 				// pickingData[universalCounter] = {
 				// 	position: position,
@@ -256,9 +261,9 @@ var pickingMaterial;
 var defaultMaterial;
 var lineMaterial;
 
-var geometriesDrawn = [];
-var geometriesPicking = [];
-var edgesDrawn = [];
+var vertexGeometriesDrawn = [];
+var vertexGeometriesPicking = [];
+var edgeGeometriesDrawn = [];
 
 var verticesDrawn = {};
 var oweEdges = {};
@@ -280,10 +285,10 @@ var universalCounter = 0;
 // animate();
 
 function init() {
-	geometriesDrawn = [];
-	geometriesPicking = [];
+	vertexGeometriesDrawn = [];
+	vertexGeometriesPicking = [];
 	pickingData = [];
-	edgesDrawn = [];
+	edgeGeometriesDrawn = [];
 	initInvariants();
 }
 
@@ -367,7 +372,7 @@ function highlight() {
 
 	raycaster.setFromCamera(rayTracer, camera);
 
-	var intersects = raycaster.intersectObjects(edgesDrawn);
+	var intersects = raycaster.intersectObjects(edgeGeometriesDrawn);
 
 	// intersected
 	if ( intersects.length > 0 ) {
@@ -502,14 +507,14 @@ function pick() {
 
 	// 	applyVertexColors( geometry, color.setHex( colorVertex) );
 
-	// 	geometriesDrawn.push( geometry );
+	// 	vertexGeometriesDrawn.push( geometry );
 
 	// 	geometry = geometry.clone();
 	// 	// give the geometry's vertices a color corresponding to the "id"
 
 	// 	applyVertexColors( geometry, color.setHex( i ) );
 
-	// 	geometriesPicking.push( geometry );
+	// 	vertexGeometriesPicking.push( geometry );
 
 	// 	pickingData[ i ] = {
 	// 		position: position,
@@ -519,6 +524,6 @@ function pick() {
 
 	// }
 
-	// drawRandomEdges(geometriesDrawn);
+	// drawRandomEdges(vertexGeometriesDrawn);
 
 /******************************************* crazy *******************************************/
