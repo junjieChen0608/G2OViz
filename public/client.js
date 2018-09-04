@@ -29,6 +29,27 @@ input.addEventListener('keyup', function(event) {
 	}
 });
 
+// count total number of edges in given graph
+function countEdge(graphName) {
+	console.log('count edges in graph ' + graphName);
+
+	fetch('/countEdge/' + graphName, {method: 'GET'})
+	.then(function(response) {
+		if (response.ok) {
+			console.log('count edges successful');
+			return response.json();
+		}
+		throw new Error('count edges failed');
+	})
+	.then(function(responseJSON) {
+		console.log("total edges " + JSON.stringify(responseJSON));
+	})
+	.catch(function(err) {
+		document.getElementById('mainDiv').innerHTML = "count edges failed"
+		console.log(err);
+	});
+}
+
 // query the given graph to count total vertices
 function countVertex(graphName) {
 	console.log('count graph ' + graphName);
@@ -51,10 +72,10 @@ function countVertex(graphName) {
 		
 		// query the graph in a loop
 		if (totalVertex > 0) {
-			// init all geometry arrays
-			init();
-			animate();
-			queryGraph(graphName, batchSize, 0);
+			// init();
+			// animate();
+			// queryGraph(graphName, batchSize, 0);
+			countEdge(graphName);
 		} else {
 			throw new Error('count vertex failed');		
 		}
@@ -118,12 +139,13 @@ function queryGraph(graphName, batchSize, iteration) {
 	});
 }
 
+// replace slash to %2F in the query url
 function replaceSlash(input) {
 	console.log("replacing slash for " + input);
 	return input.replace(/\//g, '%2F');
 }
 
-// draw line
+// draw line segment
 function drawEdge(fromPos, toPos) {
 	var points = [
 		fromPos[0], fromPos[1], fromPos[2],

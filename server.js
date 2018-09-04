@@ -30,10 +30,33 @@ app.get('/', (req, res) => {
 	res.sendFile(__dirname + '/index.html');
 });
 
+// count total edge
+app.get('/countEdge/:graphName', (req, res) => {
+	var graphName = req.params.graphName;
+	console.log("graph to count edge: " + graphName);
+
+	var edgeCounter = 0;
+	db.collection('vertices').find({graph_name: graphName}).forEach(
+		function iterCallball(vertex) {
+			if (vertex.edges && vertex.edges.length) {
+				edgeCounter += vertex.edges.length;
+				console.log("edges " + edgeCounter);
+			}
+		},
+		function endCallback(err) {
+			if (err) {
+				console.log(err);
+			} else {
+				res.send(edgeCounter.toString());
+			}
+		}
+	);
+})
+
 // count total vertex
 app.get('/countVertex/:graphName', (req, res) => {
 	var graphName = req.params.graphName;
-	console.log("graph to count: " + graphName);
+	console.log("graph to count vertex: " + graphName);
 	db.collection('vertices').countDocuments({graph_name: graphName}, (err, count) => {
 		if (err) {
 			console.log(err);
