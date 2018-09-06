@@ -51,11 +51,12 @@ app.get('/countEdge/:graphName', (req, res) => {
 			}
 		}
 	);
-})
+});
 
 // count total vertex
 app.get('/countVertex/:graphName', (req, res) => {
 	verticesDrawn = {};
+    verticesDrawnArrayView = undefined;
 
 	var graphName = req.params.graphName;
 	console.log("graph to count vertex: " + graphName);
@@ -67,24 +68,24 @@ app.get('/countVertex/:graphName', (req, res) => {
 
 		res.send((count).toString());
 	});
-})
+});
 
 // query vertices of given graph
-app.get('/queryGraphVertex/:graphName/:batchSize/:iteration', (req, res) => {
+app.get('/queryGraphVertex/:graphName/:vertexBatchSize/:iteration', (req, res) => {
 	verticesToRespond = {};
 
 	var graphName = req.params.graphName;
-	var batchSize = req.params.batchSize;
+	var vertexBatchSize = req.params.vertexBatchSize;
 	var iteration = req.params.iteration;
 	console.log("graph to query: " + graphName
-				+ "\nbatch size: " + batchSize
+				+ "\nbatch size: " + vertexBatchSize
 				+ "\niteration: " + iteration);
 
 	res.set('Content-Type', 'application/json');
 	var cursor = db.collection('vertices').find({graph_name: graphName});
 
-	cursor.skip(iteration * batchSize)
-		  .limit(parseInt(batchSize, 10))
+	cursor.skip(iteration * vertexBatchSize)
+		  .limit(parseInt(vertexBatchSize, 10))
 		  .forEach(function iterCallback(vertex) {
 		  	// first pass: parse all vertices here
 		  	parseVertex(vertex);
@@ -102,20 +103,16 @@ app.get('/queryGraphVertex/:graphName/:batchSize/:iteration', (req, res) => {
 		  	}
 		  });
 
-
-  	// deprecate this response when 3-pass back-end processing is implemented
 	// cursor = db.collection('vertices').find({graph_name: graphName});
-	// cursor.skip(iteration * batchSize)
-	// 	  .limit(parseInt(batchSize, 10))
+	// cursor.skip(iteration * vertexBatchSize)
+	// 	  .limit(parseInt(vertexBatchSize, 10))
 	// 	  .stream()
 	// 	  .pipe(JSONStream.stringify())
 	// 	  .pipe(res);
 });
 
-// TODO implement query edges API
-
 /*
-	the response object
+	the response vertex object
 	{
 		vid: {
 			ori: [w, x, y, z],
@@ -130,6 +127,7 @@ app.get('/queryGraphVertex/:graphName/:batchSize/:iteration', (req, res) => {
 */
 var verticesToRespond; // record response for each batch query, reset in queryGraphVertex
 var verticesDrawn; // record all vertice in this graph, reset in countVertex
+var verticesDrawnArrayView; // provide an indexed view of verticesDrawn
 
 /*
 1, first pass, parse each vertex that belongs to this batch, compose key-val pair in its full format(i.e. w/ edges)
@@ -191,3 +189,57 @@ function parseEdges(edges, extractFull) {
 		extractFull["edges"].push(JSON.stringify(edges[i]["to"]));
 	}
 }
+
+/*
+    the response edge object
+    {
+        index: number,
+        edges: [
+                    {posFrom, posTo}
+                    .
+                    .
+                    .
+               ]
+    }
+
+ */
+var edgesToRespond; // record response for each batch edge query, reset in queryGraphEdge
+
+// TODO implement query edges API
+app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
+    // if the array view of verticesDrawn map is undefined, initialize it
+    if (verticesDrawnArrayView === undefined) {
+        verticesDrawnArrayView = Object.keys(verticesDrawn);
+    }
+
+    edgesToRespond = {"index": -1,
+        "edgeCount" : 0,
+        "edges": []};
+
+    var graphName = req.params.graphName;
+    var edgeBatchSize = req.params.edgeBatchSize;
+    var index = req.params.index;
+
+    // jump to the right index to collect edges
+
+    for (index; index < verticesDrawnArrayView.length; ++index) {
+        if (edgesToRespond["edges"].length < edgeBatchSize) {
+            var vid = verticesDrawnArrayView[index];
+            var posFrom = verticesDrawn[vid]["pos"];
+            var edges = verticesDrawn[vid]["edges"];
+            // console.log("vid " + vid + " has " + edges.length + " edges");
+
+            for (leadTo in edges) {
+                var posTo = verticesDrawn[leadTo]["pos"];
+                edgesToRespond["edges"].push({"from": posFrom, "to": posTo});
+            }
+
+            if (edgesToRespond["edges"].length >= edgeBatchSize) {
+                break;
+            }
+        }
+    }
+    edgesToRespond["index"] = index;
+    edgesToRespond["edgeCount"] = edgesToRespond["edges"].length;
+    res.send(edgesToRespond);
+});

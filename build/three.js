@@ -29475,7 +29475,7 @@ const LEGACY_FIND_QUERY_MAP = {
 
 const LEGACY_FIND_OPTIONS_MAP = {
   numberToSkip: 'skip',
-  numberToReturn: 'batchSize',
+  numberToReturn: 'vertexBatchSize',
   returnFieldsSelector: 'projection'
 };
 
@@ -29822,7 +29822,7 @@ Query.prototype.toBin = function() {
     flags |= OPTS_PARTIAL;
   }
 
-  // If batchSize is different to self.numberToReturn
+  // If vertexBatchSize is different to self.numberToReturn
   if (self.batchSize !== self.numberToReturn) self.numberToReturn = self.batchSize;
 
   // Allocate write protocol header buffer
@@ -33142,7 +33142,7 @@ var BSON = retrieveBSON(),
  * @param {string} ns The MongoDB fully qualified namespace (ex: db1.collection1)
  * @param {{object}|Long} cmd The selector (can be a command or a cursorId)
  * @param {object} [options=null] Optional settings.
- * @param {object} [options.batchSize=1000] Batchsize for the operation
+ * @param {object} [options.vertexBatchSize=1000] Batchsize for the operation
  * @param {array} [options.documents=[]] Initial documents list for cursor
  * @param {object} [options.transforms=null] Transform methods for the cursor results
  * @param {function} [options.transforms.query] Transform the value returned from the initial query
@@ -33234,7 +33234,7 @@ var Cursor = function(bson, ns, cmd, options, topology, topologyOptions) {
 };
 
 Cursor.prototype.setCursorBatchSize = function(value) {
-  this.cursorState.batchSize = value;
+  this.cursorState.vertexBatchSize = value;
 };
 
 Cursor.prototype.cursorBatchSize = function() {
@@ -33415,7 +33415,7 @@ Cursor.prototype._getmore = function(callback) {
   // Determine if it's a raw query
   var raw = this.options.raw || this.cmd.raw;
 
-  // Set the current batchSize
+  // Set the current vertexBatchSize
   var batchSize = this.cursorState.batchSize;
   if (
     this.cursorState.limit > 0 &&
@@ -35635,7 +35635,7 @@ Mongos.prototype.command = function(ns, cmd, options, callback) {
  * @param {string} ns The MongoDB fully qualified namespace (ex: db1.collection1)
  * @param {object|Long} cmd Can be either a command returning a cursor or a cursorId
  * @param {object} [options] Options for the cursor
- * @param {object} [options.batchSize=0] Batchsize for the operation
+ * @param {object} [options.vertexBatchSize=0] Batchsize for the operation
  * @param {array} [options.documents=[]] Initial documents list for cursor
  * @param {ReadPreference} [options.readPreference] Specify read preference if command supports it
  * @param {Boolean} [options.serializeFunctions=false] Specify if functions on an object should be serialized.
@@ -37796,7 +37796,7 @@ ReplSet.prototype.logout = function(dbName, callback) {
  * @param {string} ns The MongoDB fully qualified namespace (ex: db1.collection1)
  * @param {object|Long} cmd Can be either a command returning a cursor or a cursorId
  * @param {object} [options] Options for the cursor
- * @param {object} [options.batchSize=0] Batchsize for the operation
+ * @param {object} [options.vertexBatchSize=0] Batchsize for the operation
  * @param {array} [options.documents=[]] Initial documents list for cursor
  * @param {ReadPreference} [options.readPreference] Specify read preference if command supports it
  * @param {Boolean} [options.serializeFunctions=false] Specify if functions on an object should be serialized.
@@ -39952,7 +39952,7 @@ Server.prototype.remove = function(ns, ops, options, callback) {
  * @param {string} ns The MongoDB fully qualified namespace (ex: db1.collection1)
  * @param {object|Long} cmd Can be either a command returning a cursor or a cursorId
  * @param {object} [options] Options for the cursor
- * @param {object} [options.batchSize=0] Batchsize for the operation
+ * @param {object} [options.vertexBatchSize=0] Batchsize for the operation
  * @param {array} [options.documents=[]] Initial documents list for cursor
  * @param {ReadPreference} [options.readPreference] Specify read preference if command supports it
  * @param {Boolean} [options.serializeFunctions=false] Specify if functions on an object should be serialized.
@@ -41370,11 +41370,11 @@ var setupClassicFind = function(bson, ns, cmd, cursorState, topology, options) {
   options = options || {};
   // Get the readPreference
   var readPreference = getReadPreference(cmd, options);
-  // Set the optional batchSize
+  // Set the optional vertexBatchSize
   cursorState.batchSize = cmd.batchSize || cursorState.batchSize;
   var numberToReturn = 0;
 
-  // Unpack the limit and batchSize values
+  // Unpack the limit and vertexBatchSize values
   if (cursorState.limit === 0) {
     numberToReturn = cursorState.batchSize;
   } else if (
@@ -41934,7 +41934,7 @@ WireProtocol.prototype.command = function(bson, ns, cmd, cursorState, topology, 
 //   , hint: <string>
 //   , explain: <boolean>
 //   , snapshot: <boolean>
-//   , batchSize: <n>
+//   , vertexBatchSize: <n>
 //   , returnKey: <boolean>
 //   , maxScan: <n>
 //   , min: <n>
@@ -41961,7 +41961,7 @@ WireProtocol.prototype.command = function(bson, ns, cmd, cursorState, topology, 
 //     “hint”: { ... },
 //     “skip”: <int>,
 //     “limit”: <int>,
-//     “batchSize”: <int>,
+//     “vertexBatchSize”: <int>,
 //     “singleBatch”: <bool>,
 //     “comment”: <string>,
 //     “maxScan”: <int>,
@@ -41987,7 +41987,7 @@ function executeFindCommand(bson, ns, cmd, cursorState, topology, options) {
   // Get the readPreference
   const readPreference = getReadPreference(cmd, options);
 
-  // Set the optional batchSize
+  // Set the optional vertexBatchSize
   cursorState.batchSize = cmd.batchSize || cursorState.batchSize;
 
   // Build command namespace
@@ -42063,7 +42063,7 @@ function executeFindCommand(bson, ns, cmd, cursorState, topology, options) {
     findCmd.singleBatch = true;
   }
 
-  // Add a batchSize
+  // Add a vertexBatchSize
   if (typeof cmd.batchSize === 'number') {
     if (cmd.batchSize < 0) {
       if (cmd.limit !== 0 && Math.abs(cmd.batchSize) < Math.abs(cmd.limit)) {
@@ -42941,7 +42941,7 @@ for (var name in CoreCursor.prototype) {
 /**
  * Set the batch size for the cursor.
  * @method
- * @param {number} value The batchSize for the cursor.
+ * @param {number} value The vertexBatchSize for the cursor.
  * @throws {MongoError}
  * @return {AggregationCursor}
  */
@@ -42949,8 +42949,8 @@ AggregationCursor.prototype.batchSize = function(value) {
   if (this.s.state === AggregationCursor.CLOSED || this.isDead())
     throw MongoError.create({ message: 'Cursor is closed', driver: true });
   if (typeof value !== 'number')
-    throw MongoError.create({ message: 'batchSize requires an integer', drvier: true });
-  if (this.s.cmd.cursor) this.s.cmd.cursor.batchSize = value;
+    throw MongoError.create({ message: 'vertexBatchSize requires an integer', drvier: true });
+  if (this.s.cmd.cursor) this.s.cmd.cursor.vertexBatchSize = value;
   this.setCursorBatchSize(value);
   return this;
 };
@@ -44905,7 +44905,7 @@ const CHANGE_DOMAIN_TYPES = {
  * @param {string} [options.fullDocument='default'] Allowed values: ‘default’, ‘updateLookup’. When set to ‘updateLookup’, the change stream will include both a delta describing the changes to the document, as well as a copy of the entire document that was changed from some time after the change occurred.
  * @param {number} [options.maxAwaitTimeMS] The maximum amount of time for the server to wait on new documents to satisfy a change stream query
  * @param {object} [options.resumeAfter] Specifies the logical starting point for the new change stream. This should be the _id field from a previously returned change stream document.
- * @param {number} [options.batchSize] The number of documents to return per batch. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
+ * @param {number} [options.vertexBatchSize] The number of documents to return per batch. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
  * @param {object} [options.collation] Specify collation settings for operation. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
  * @param {ReadPreference} [options.readPreference] The read preference. Defaults to the read preference of the database or collection. See {@link https://docs.mongodb.com/manual/reference/read-preference|read preference documentation}.
  * @fires ChangeStream#close
@@ -45547,7 +45547,7 @@ const DEPRECATED_FIND_OPTIONS = ['maxScan', 'fields', 'snapshot'];
  * @param {boolean} [options.snapshot=false] DEPRECATED: Snapshot query.
  * @param {boolean} [options.timeout=false] Specify if the cursor can timeout.
  * @param {boolean} [options.tailable=false] Specify if the cursor is tailable.
- * @param {number} [options.batchSize=0] Set the batchSize for the getMoreCommand when iterating over the query results.
+ * @param {number} [options.vertexBatchSize=0] Set the vertexBatchSize for the getMoreCommand when iterating over the query results.
  * @param {boolean} [options.returnKey=false] Only return the index key.
  * @param {number} [options.maxScan] DEPRECATED: Limit the number of items to scan.
  * @param {number} [options.min] Set index bounds.
@@ -46281,7 +46281,7 @@ Collection.prototype.save = deprecate(function(doc, options, callback) {
  * @param {boolean} [options.snapshot=false] DEPRECATED: Snapshot query.
  * @param {boolean} [options.timeout=false] Specify if the cursor can timeout.
  * @param {boolean} [options.tailable=false] Specify if the cursor is tailable.
- * @param {number} [options.batchSize=0] Set the batchSize for the getMoreCommand when iterating over the query results.
+ * @param {number} [options.vertexBatchSize=0] Set the vertexBatchSize for the getMoreCommand when iterating over the query results.
  * @param {boolean} [options.returnKey=false] Only return the index key.
  * @param {number} [options.maxScan] DEPRECATED: Limit the number of items to scan.
  * @param {number} [options.min] Set index bounds.
@@ -46523,7 +46523,7 @@ Collection.prototype.reIndex = function(options, callback) {
  *
  * @method
  * @param {object} [options] Optional settings.
- * @param {number} [options.batchSize] The batchSize for the returned command cursor or if pre 2.8 the systems batch collection
+ * @param {number} [options.vertexBatchSize] The vertexBatchSize for the returned command cursor or if pre 2.8 the systems batch collection
  * @param {(ReadPreference|string)} [options.readPreference] The preferred read preference (ReadPreference.PRIMARY, ReadPreference.PRIMARY_PREFERRED, ReadPreference.SECONDARY, ReadPreference.SECONDARY_PREFERRED, ReadPreference.NEAREST).
  * @param {ClientSession} [options.session] optional session to use for this operation
  * @return {CommandCursor}
@@ -46989,7 +46989,7 @@ Collection.prototype.findAndRemove = deprecate(function(query, sort, options, ca
  * @param {object} [options] Optional settings.
  * @param {(ReadPreference|string)} [options.readPreference] The preferred read preference (ReadPreference.PRIMARY, ReadPreference.PRIMARY_PREFERRED, ReadPreference.SECONDARY, ReadPreference.SECONDARY_PREFERRED, ReadPreference.NEAREST).
  * @param {object} [options.cursor] Return the query as cursor, on 2.6 > it returns as a real cursor on pre 2.6 it returns as an emulated cursor.
- * @param {number} [options.cursor.batchSize] The batchSize for the cursor
+ * @param {number} [options.cursor.vertexBatchSize] The vertexBatchSize for the cursor
  * @param {boolean} [options.explain=false] Explain returns the aggregation execution plan (requires mongodb 2.6 >).
  * @param {boolean} [options.allowDiskUse=false] allowDiskUse lets the server know if it can use disk to store temporary results for the aggregation (requires mongodb 2.6 >).
  * @param {number} [options.maxTimeMS] maxTimeMS specifies a cumulative time limit in milliseconds for processing operations on the cursor. MongoDB interrupts the operation at the earliest following interrupt point.
@@ -47137,7 +47137,7 @@ Collection.prototype.aggregate = function(pipeline, options, callback) {
  * @param {string} [options.fullDocument='default'] Allowed values: ‘default’, ‘updateLookup’. When set to ‘updateLookup’, the change stream will include both a delta describing the changes to the document, as well as a copy of the entire document that was changed from some time after the change occurred.
  * @param {object} [options.resumeAfter] Specifies the logical starting point for the new change stream. This should be the _id field from a previously returned change stream document.
  * @param {number} [options.maxAwaitTimeMS] The maximum amount of time for the server to wait on new documents to satisfy a change stream query
- * @param {number} [options.batchSize] The number of documents to return per batch. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
+ * @param {number} [options.vertexBatchSize] The number of documents to return per batch. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
  * @param {object} [options.collation] Specify collation settings for operation. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
  * @param {ReadPreference} [options.readPreference] The read preference. Defaults to the read preference of the database or collection. See {@link https://docs.mongodb.com/manual/reference/read-preference|read preference documentation}.
  * @param {Timestamp} [options.startAtClusterTime] receive change events that occur after the specified timestamp
@@ -47170,7 +47170,7 @@ Collection.prototype.watch = function(pipeline, options) {
  * @method
  * @param {object} [options] Optional settings.
  * @param {(ReadPreference|string)} [options.readPreference] The preferred read preference (ReadPreference.PRIMARY, ReadPreference.PRIMARY_PREFERRED, ReadPreference.SECONDARY, ReadPreference.SECONDARY_PREFERRED, ReadPreference.NEAREST).
- * @param {number} [options.batchSize] Set the batchSize for the getMoreCommand when iterating over the query results.
+ * @param {number} [options.vertexBatchSize] Set the vertexBatchSize for the getMoreCommand when iterating over the query results.
  * @param {number} [options.numCursors=1] The maximum number of parallel command cursors to return (the number of returned cursors will be in the range 1:numCursors)
  * @param {boolean} [options.raw=false] Return all BSON documents as Raw Buffer documents.
  * @param {Collection~parallelCollectionScanCallback} [callback] The command result callback
@@ -47582,7 +47582,7 @@ CommandCursor.prototype.setReadPreference = function(readPreference) {
 /**
  * Set the batch size for the cursor.
  * @method
- * @param {number} value The batchSize for the cursor.
+ * @param {number} value The vertexBatchSize for the cursor.
  * @throws {MongoError}
  * @return {CommandCursor}
  */
@@ -47590,8 +47590,8 @@ CommandCursor.prototype.batchSize = function(value) {
   if (this.s.state === CommandCursor.CLOSED || this.isDead())
     throw MongoError.create({ message: 'Cursor is closed', driver: true });
   if (typeof value !== 'number')
-    throw MongoError.create({ message: 'batchSize requires an integer', driver: true });
-  if (this.s.cmd.cursor) this.s.cmd.cursor.batchSize = value;
+    throw MongoError.create({ message: 'vertexBatchSize requires an integer', driver: true });
+  if (this.s.cmd.cursor) this.s.cmd.cursor.vertexBatchSize = value;
   this.setCursorBatchSize(value);
   return this;
 };
@@ -47808,7 +47808,7 @@ const fields = ['numberOfRetries', 'tailableRetryInterval'];
  *
  * collection.find({}).project({a:1})                             // Create a projection of field a
  * collection.find({}).skip(1).limit(10)                          // Skip 1 and limit 10
- * collection.find({}).batchSize(5)                               // Set batchSize on cursor to 5
+ * collection.find({}).vertexBatchSize(5)                               // Set vertexBatchSize on cursor to 5
  * collection.find({}).filter({a:1})                              // Set query on the cursor
  * collection.find({}).comment('add a comment')                   // Add a comment to the query, allowing to correlate queries
  * collection.find({}).addCursorFlag('tailable', true)            // Set cursor as tailable
@@ -47889,7 +47889,7 @@ function Cursor(bson, ns, cmd, options, topology, topologyOptions) {
   // Set the sort value
   this.sortValue = this.s.cmd.sort;
 
-  // Get the batchSize
+  // Get the vertexBatchSize
   const batchSize =
     cmd.cursor && cmd.cursor.batchSize
       ? cmd.cursor && cmd.cursor.batchSize
@@ -47897,7 +47897,7 @@ function Cursor(bson, ns, cmd, options, topology, topologyOptions) {
         ? options.cursor.batchSize
         : 1000;
 
-  // Set the batchSize
+  // Set the vertexBatchSize
   this.setCursorBatchSize(batchSize);
 }
 
@@ -48311,13 +48311,13 @@ Cursor.prototype.sort = function(keyOrList, direction) {
 /**
  * Set the batch size for the cursor.
  * @method
- * @param {number} value The batchSize for the cursor.
+ * @param {number} value The vertexBatchSize for the cursor.
  * @throws {MongoError}
  * @return {Cursor}
  */
 Cursor.prototype.batchSize = function(value) {
   if (this.s.options.tailable) {
-    throw MongoError.create({ message: "Tailable cursor doesn't support batchSize", driver: true });
+    throw MongoError.create({ message: "Tailable cursor doesn't support vertexBatchSize", driver: true });
   }
 
   if (this.s.state === Cursor.CLOSED || this.isDead()) {
@@ -48325,10 +48325,10 @@ Cursor.prototype.batchSize = function(value) {
   }
 
   if (typeof value !== 'number') {
-    throw MongoError.create({ message: 'batchSize requires an integer', driver: true });
+    throw MongoError.create({ message: 'vertexBatchSize requires an integer', driver: true });
   }
 
-  this.s.cmd.batchSize = value;
+  this.s.cmd.vertexBatchSize = value;
   this.setCursorBatchSize(value);
   return this;
 };
@@ -49342,7 +49342,7 @@ Db.prototype.stats = function(options, callback) {
  * @param {object} [filter={}] Query to filter collections by
  * @param {object} [options] Optional settings.
  * @param {boolean} [options.nameOnly=false] Since 4.0: If true, will only return the collection name in the response, and will omit additional info
- * @param {number} [options.batchSize] The batchSize for the returned command cursor or if pre 2.8 the systems batch collection
+ * @param {number} [options.vertexBatchSize] The vertexBatchSize for the returned command cursor or if pre 2.8 the systems batch collection
  * @param {(ReadPreference|string)} [options.readPreference] The preferred read preference (ReadPreference.PRIMARY, ReadPreference.PRIMARY_PREFERRED, ReadPreference.SECONDARY, ReadPreference.SECONDARY_PREFERRED, ReadPreference.NEAREST).
  * @param {ClientSession} [options.session] optional session to use for this operation
  * @return {CommandCursor}
@@ -49762,7 +49762,7 @@ Db.prototype.unref = function() {
  * @param {string} [options.fullDocument='default'] Allowed values: ‘default’, ‘updateLookup’. When set to ‘updateLookup’, the change stream will include both a delta describing the changes to the document, as well as a copy of the entire document that was changed from some time after the change occurred.
  * @param {object} [options.resumeAfter] Specifies the logical starting point for the new change stream. This should be the _id field from a previously returned change stream document.
  * @param {number} [options.maxAwaitTimeMS] The maximum amount of time for the server to wait on new documents to satisfy a change stream query
- * @param {number} [options.batchSize] The number of documents to return per batch. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
+ * @param {number} [options.vertexBatchSize] The number of documents to return per batch. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
  * @param {object} [options.collation] Specify collation settings for operation. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
  * @param {ReadPreference} [options.readPreference] The read preference. Defaults to the read preference of the database. See {@link https://docs.mongodb.com/manual/reference/read-preference|read preference documentation}.
  * @param {Timestamp} [options.startAtClusterTime] receive change events that occur after the specified timestamp
@@ -50525,7 +50525,7 @@ function _delete(_this, id, callback) {
  * @method
  * @param {Object} filter
  * @param {Object} [options] Optional settings for cursor
- * @param {number} [options.batchSize] Optional batch size for cursor
+ * @param {number} [options.vertexBatchSize] Optional batch size for cursor
  * @param {number} [options.limit] Optional limit for cursor
  * @param {number} [options.maxTimeMS] Optional maxTimeMS for cursor
  * @param {boolean} [options.noCursorTimeout] Optionally set cursor's `noCursorTimeout` flag
@@ -53817,7 +53817,7 @@ MongoClient.prototype.withSession = function(options, operation) {
  * @param {string} [options.fullDocument='default'] Allowed values: ‘default’, ‘updateLookup’. When set to ‘updateLookup’, the change stream will include both a delta describing the changes to the document, as well as a copy of the entire document that was changed from some time after the change occurred.
  * @param {object} [options.resumeAfter] Specifies the logical starting point for the new change stream. This should be the _id field from a previously returned change stream document.
  * @param {number} [options.maxAwaitTimeMS] The maximum amount of time for the server to wait on new documents to satisfy a change stream query
- * @param {number} [options.batchSize] The number of documents to return per batch. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
+ * @param {number} [options.vertexBatchSize] The number of documents to return per batch. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
  * @param {object} [options.collation] Specify collation settings for operation. See {@link https://docs.mongodb.com/manual/reference/command/aggregate|aggregation documentation}.
  * @param {ReadPreference} [options.readPreference] The read preference. See {@link https://docs.mongodb.com/manual/reference/read-preference|read preference documentation}.
  * @param {Timestamp} [options.startAtClusterTime] receive change events that occur after the specified timestamp

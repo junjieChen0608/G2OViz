@@ -2,9 +2,11 @@
 console.log('client running');
 
 var verticesFromBackend;
-const batchSize = 5000;
+const vertexBatchSize = 5000;
+const edgeBatchSize = 10000;
 var totalIteration = 0;
 var totalVertex = 0;
+// var totalEdge = 0;
 
 
 const button = document.getElementById('render');
@@ -53,7 +55,7 @@ function countEdge(graphName) {
 // query the given graph to count total vertices
 function countVertex(graphName) {
 	console.log('count graph ' + graphName);
-
+    // totalEdge = 0;
 	fetch('/countVertex/' + graphName, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
@@ -67,14 +69,14 @@ function countVertex(graphName) {
 		totalVertex = JSON.stringify(responseJSON);
 		console.log("total vertex " + totalVertex);
 		
-		totalIteration = Math.floor(totalVertex / batchSize) + ((totalVertex % batchSize) ? 1 : 0);
+		totalIteration = Math.floor(totalVertex / vertexBatchSize) + ((totalVertex % vertexBatchSize) ? 1 : 0);
 		console.log("need to iterate " + totalIteration);
 		
 		// query the graph in a loop
 		if (totalVertex > 0) {
 			init();
 			animate();
-			queryGraphVertex(graphName, batchSize, 0);
+			queryGraphVertex(graphName, vertexBatchSize, 0);
 		} else {
 			throw new Error('count vertex failed');		
 		}
@@ -86,17 +88,17 @@ function countVertex(graphName) {
 }
 
 // query given graph, response is a batch size of vertices
-function queryGraphVertex(graphName, batchSize, iteration) {
-	fetch('/queryGraphVertex/' + graphName + '/' + batchSize + '/' + iteration, {method: 'GET'})
+function queryGraphVertex(graphName, vertexBatchSize, iteration) {
+	fetch('/queryGraphVertex/' + graphName + '/' + vertexBatchSize + '/' + iteration, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
-			console.log('query graph successful');
+			console.log('query graph vertices successful');
 			return response.json();
 		}
-		throw new Error('query graph failed');
+		throw new Error('query graph vertices failed');
 	})
 	.then(function(responseJSON) {
-		console.log("rendering vertices from back-end");
+		console.log("draw vertices from back-end");
 
 		verticesFromBackend = JSON.parse(JSON.stringify(responseJSON));
         // console.log("vertex array length " + verticesFromBackend.length);
@@ -123,21 +125,55 @@ function queryGraphVertex(graphName, batchSize, iteration) {
 
 		if (++iteration < totalIteration) {
 			// recursive call, query next batch of vertex
-			queryGraphVertex(graphName, batchSize, iteration);
+			queryGraphVertex(graphName, vertexBatchSize, iteration);
 		} else {
 			// query is finished, update both page and console
 			// document.getElementById('mainDiv').innerHTML = JSON.stringify(verticesFromBackend[0]);
 			document.getElementById('mainDiv').innerHTML = "done";
 
 			// pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( vertexGeometriesPicking ), pickingMaterial ) );			
-			console.log("rendering finished");
+            console.log("draw vertices from back-end DONE");
 			// TODO render edges after all vertices are rendered
+            // by calling query edge API
+            queryGraphEdge(graphName, edgeBatchSize, 0);
+            console.log("CALL ESCAPED");
 		}
 	})
 	.catch(function(err) {
 		document.getElementById('mainDiv').innerHTML = graphName + " not found";
 		console.log(err);
 	});
+}
+
+// TODO implement query given graph's edges
+function queryGraphEdge(graphName, edgeBatchSize, index) {
+    fetch('/queryGraphEdge/' + graphName + '/' + edgeBatchSize + '/' + index, {method: 'GET'})
+    .then(function(response) {
+        if (response.ok) {
+            console.log('query graph edges successful');
+            return response.json();
+        }
+        throw new Error('query graph edges failed');
+    })
+    .then(function(responseJSON) {
+        var edgesFromBackend = JSON.parse(JSON.stringify(responseJSON));
+        var backEndIndex = edgesFromBackend["index"];
+        var backEndEdgeCount = edgesFromBackend["edgeCount"];
+        console.log("backend index: " + backEndIndex
+                    + "\nbackend edge count " + backEndEdgeCount);
+        // totalEdge += backEndEdgeCount;
+
+        if (backEndIndex < totalVertex) {
+            console.log("draw edges from back-end");
+            queryGraphEdge(graphName, edgeBatchSize, ++backEndIndex);
+        } else {
+            console.log("draw edges from back-end DONE");
+        }
+
+    })
+    .catch(function(err) {
+        console.log(err);
+    });
 }
 
 // replace slash to %2F in the query url
@@ -250,7 +286,7 @@ function initInvariants() {
 	container = document.getElementById( "container" );
 
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
-	camera.position.z = 3000;
+	camera.position.z = 2000;
 
 	pickingScene = new THREE.Scene();
 	pickingTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
