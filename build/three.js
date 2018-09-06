@@ -68306,7 +68306,7 @@ app.get('/', (req, res) => {
 });
 
 // query graph name
-app.post('/queryGraph/:graphName', (req, res) => {
+app.post('/queryGraphVertex/:graphName', (req, res) => {
 	var graphName = req.params.graphName;
 	console.log("graph name to query: " + graphName);
 	db.collection('graphs').findOne({name: graphName},(err, result) => {

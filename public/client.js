@@ -72,10 +72,9 @@ function countVertex(graphName) {
 		
 		// query the graph in a loop
 		if (totalVertex > 0) {
-			// init();
-			// animate();
-			// queryGraph(graphName, batchSize, 0);
-			countEdge(graphName);
+			init();
+			animate();
+			queryGraphVertex(graphName, batchSize, 0);
 		} else {
 			throw new Error('count vertex failed');		
 		}
@@ -87,8 +86,8 @@ function countVertex(graphName) {
 }
 
 // query given graph, response is a batch size of vertices
-function queryGraph(graphName, batchSize, iteration) {
-	fetch('/queryGraph/' + graphName + '/' + batchSize + '/' + iteration, {method: 'GET'})
+function queryGraphVertex(graphName, batchSize, iteration) {
+	fetch('/queryGraphVertex/' + graphName + '/' + batchSize + '/' + iteration, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
 			console.log('query graph successful');
@@ -98,8 +97,10 @@ function queryGraph(graphName, batchSize, iteration) {
 	})
 	.then(function(responseJSON) {
 		console.log("rendering response");
-		// consume response to render
+		// TODO implement new rendering logic
+		// as vertex and edge information are all processed in back-end
 		vertexArray = JSON.parse(JSON.stringify(responseJSON));
+		// console.log("back-end data length " + Object.keys(vertexArray).length);
 		for (var i = 0; i < vertexArray.length; ++i) {
 			var vertex = vertexArray[i];
 			parseVertex(vertex);
@@ -108,7 +109,7 @@ function queryGraph(graphName, batchSize, iteration) {
 		// merge all drawn vertex geometries to render a single mesh
 		if (vertexGeometriesDrawn.length) {
 			var mergedVertexObjects = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(vertexGeometriesDrawn), defaultMaterial);
-			scene.add(mergedVertexObjects);	
+			scene.add(mergedVertexObjects);
 		}
 		vertexGeometriesDrawn = [];
 
@@ -123,14 +124,14 @@ function queryGraph(graphName, batchSize, iteration) {
 
 		if (++iteration < totalIteration) {
 			// recursive call, query next batch of vertex
-			queryGraph(graphName, batchSize, iteration);
+			queryGraphVertex(graphName, batchSize, iteration);
 		} else {
 			// query is finished, update both page and console
-			document.getElementById('mainDiv').innerHTML = JSON.stringify(vertexArray[0]);
-			// document.getElementById('mainDiv').innerHTML = "done";
+			// document.getElementById('mainDiv').innerHTML = JSON.stringify(vertexArray[0]);
+			document.getElementById('mainDiv').innerHTML = "done";
 
 			// pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( vertexGeometriesPicking ), pickingMaterial ) );			
-			console.log("rendering finished");	
+			console.log("rendering finished");
 		}
 	})
 	.catch(function(err) {
@@ -233,7 +234,7 @@ function parsePoses(poses, vid) {
 				// };
 				++universalCounter;
 				verticesDrawn[vid] = pos;
-				// TODO if this vid is in oweEdges, need to clear the corresponding entry and draw edges
+				// if this vid is in oweEdges, need to clear the corresponding entry and draw edges
 				payTheDebt(vid, pos);
 				return pos;
 			}
@@ -302,7 +303,7 @@ const scale = new THREE.Vector3(0.7, 0.7, 0.7);
 
 var universalCounter = 0;
 
-// TODO render the scene batch by batch
+// render the scene batch by batch
 // init();
 // animate();
 
