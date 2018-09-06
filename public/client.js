@@ -3,10 +3,10 @@ console.log('client running');
 
 var verticesFromBackend;
 const vertexBatchSize = 5000;
-const edgeBatchSize = 10000;
+const edgeBatchSize = 20000;
 var totalIteration = 0;
 var totalVertex = 0;
-// var totalEdge = 0;
+var totalEdge = 0;
 
 
 const button = document.getElementById('render');
@@ -55,7 +55,7 @@ function countEdge(graphName) {
 // query the given graph to count total vertices
 function countVertex(graphName) {
 	console.log('count graph ' + graphName);
-    // totalEdge = 0;
+    totalEdge = 0;
 	fetch('/countVertex/' + graphName, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
@@ -102,7 +102,7 @@ function queryGraphVertex(graphName, vertexBatchSize, iteration) {
 
 		verticesFromBackend = JSON.parse(JSON.stringify(responseJSON));
         // console.log("vertex array length " + verticesFromBackend.length);
-		console.log("back-end data length " + Object.keys(verticesFromBackend).length);
+		console.log("back-end vertex length " + Object.keys(verticesFromBackend).length);
 
 		for (var vid in verticesFromBackend) {
 		    var curVertex = verticesFromBackend[vid];
@@ -116,13 +116,6 @@ function queryGraphVertex(graphName, vertexBatchSize, iteration) {
 		}
 		vertexGeometriesDrawn = [];
 
-		// // merge all drawn edge geometries to render a single line segment
-		// if (edgeGeometriesDrawn.length) {
-		// 	var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn), lineMaterial);
-		// 	scene.add(mergedEdgeObject);
-		// }
-		// edgeGeometriesDrawn = [];
-
 		if (++iteration < totalIteration) {
 			// recursive call, query next batch of vertex
 			queryGraphVertex(graphName, vertexBatchSize, iteration);
@@ -133,10 +126,9 @@ function queryGraphVertex(graphName, vertexBatchSize, iteration) {
 
 			// pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( vertexGeometriesPicking ), pickingMaterial ) );			
             console.log("draw vertices from back-end DONE");
-			// TODO render edges after all vertices are rendered
+			// render edges after all vertices are rendered
             // by calling query edge API
             queryGraphEdge(graphName, edgeBatchSize, 0);
-            console.log("CALL ESCAPED");
 		}
 	})
 	.catch(function(err) {
@@ -161,13 +153,30 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
         var backEndEdgeCount = edgesFromBackend["edgeCount"];
         console.log("backend index: " + backEndIndex
                     + "\nbackend edge count " + backEndEdgeCount);
-        // totalEdge += backEndEdgeCount;
+        totalEdge += backEndEdgeCount;
+        // var head = edgesFromBackend["edges"][0]["fromPos"];
+        // console.log(head[0]);
+
+        var edgeArray = edgesFromBackend["edges"];
+        for (var i  = 0; i < edgeArray.length; ++i) {
+            var fromPos = edgeArray[i]["fromPos"];
+            var toPos = edgeArray[i]["toPos"];
+            drawEdge(fromPos, toPos);
+        }
+
+        // merge all drawn edge geometries to render a single line segment
+        if (edgeGeometriesDrawn.length) {
+        	var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn), lineMaterial);
+        	scene.add(mergedEdgeObject);
+        }
+        edgeGeometriesDrawn = [];
 
         if (backEndIndex < totalVertex) {
             console.log("draw edges from back-end");
             queryGraphEdge(graphName, edgeBatchSize, ++backEndIndex);
         } else {
-            console.log("draw edges from back-end DONE");
+            console.log("draw edges from back-end DONE"
+                        + "\ntotal " + totalEdge + " drawn");
         }
 
     })

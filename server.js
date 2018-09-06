@@ -40,7 +40,7 @@ app.get('/countEdge/:graphName', (req, res) => {
 		function iterCallback(vertex) {
 			if (vertex.edges && vertex.edges.length) {
 				edgeCounter += vertex.edges.length;
-				console.log("edges " + edgeCounter);
+				// console.log("edges " + edgeCounter);
 			}
 		},
 		function endCallback(err) {
@@ -194,8 +194,9 @@ function parseEdges(edges, extractFull) {
     the response edge object
     {
         index: number,
+        edgeCount: number,
         edges: [
-                    {posFrom, posTo}
+                    {posFrom, posTo},
                     .
                     .
                     .
@@ -205,7 +206,7 @@ function parseEdges(edges, extractFull) {
  */
 var edgesToRespond; // record response for each batch edge query, reset in queryGraphEdge
 
-// TODO implement query edges API
+// query given graph's edges batch by batch
 app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
     // if the array view of verticesDrawn map is undefined, initialize it
     if (verticesDrawnArrayView === undefined) {
@@ -225,13 +226,15 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
     for (index; index < verticesDrawnArrayView.length; ++index) {
         if (edgesToRespond["edges"].length < edgeBatchSize) {
             var vid = verticesDrawnArrayView[index];
-            var posFrom = verticesDrawn[vid]["pos"];
+            var fromPos = verticesDrawn[vid]["pos"];
             var edges = verticesDrawn[vid]["edges"];
             // console.log("vid " + vid + " has " + edges.length + " edges");
 
-            for (leadTo in edges) {
-                var posTo = verticesDrawn[leadTo]["pos"];
-                edgesToRespond["edges"].push({"from": posFrom, "to": posTo});
+            for (var i = 0; i < edges.length; ++i) {
+                var leadTo = edges[i];
+                // console.log("from " + vid + " to " + leadTo);
+                var toPos = verticesDrawn[leadTo]["pos"];
+                edgesToRespond["edges"].push({"fromPos": fromPos, "toPos": toPos});
             }
 
             if (edgesToRespond["edges"].length >= edgeBatchSize) {
