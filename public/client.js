@@ -1,7 +1,7 @@
 /******************************************* client-side **************************************************/
 console.log('client running');
 
-var vertexArray;
+var verticesFromBackend;
 const batchSize = 5000;
 var totalIteration = 0;
 var totalVertex = 0;
@@ -96,15 +96,16 @@ function queryGraphVertex(graphName, batchSize, iteration) {
 		throw new Error('query graph failed');
 	})
 	.then(function(responseJSON) {
-		console.log("rendering response");
-		// TODO implement new rendering logic
-		// as vertex and edge information are all processed in back-end
-		vertexArray = JSON.parse(JSON.stringify(responseJSON));
-		// console.log("back-end data length " + Object.keys(vertexArray).length);
-		for (var i = 0; i < vertexArray.length; ++i) {
-			var vertex = vertexArray[i];
-			parseVertex(vertex);
-		}
+		console.log("rendering vertices from back-end");
+
+		verticesFromBackend = JSON.parse(JSON.stringify(responseJSON));
+        // console.log("vertex array length " + verticesFromBackend.length);
+		console.log("back-end data length " + Object.keys(verticesFromBackend).length);
+
+		for (var vid in verticesFromBackend) {
+		    var curVertex = verticesFromBackend[vid];
+            parsePoses(vid, curVertex["ori"], curVertex["pos"]);
+        }
 
 		// merge all drawn vertex geometries to render a single mesh
 		if (vertexGeometriesDrawn.length) {
@@ -113,25 +114,24 @@ function queryGraphVertex(graphName, batchSize, iteration) {
 		}
 		vertexGeometriesDrawn = [];
 
-		// merge all drawn edge geometries to render a single line segment
-		if (edgeGeometriesDrawn.length) {
-			var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn), lineMaterial);
-			scene.add(mergedEdgeObject);
-		}
-		edgeGeometriesDrawn = [];
-
-		console.log("vertex array length " + vertexArray.length);
+		// // merge all drawn edge geometries to render a single line segment
+		// if (edgeGeometriesDrawn.length) {
+		// 	var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn), lineMaterial);
+		// 	scene.add(mergedEdgeObject);
+		// }
+		// edgeGeometriesDrawn = [];
 
 		if (++iteration < totalIteration) {
 			// recursive call, query next batch of vertex
 			queryGraphVertex(graphName, batchSize, iteration);
 		} else {
 			// query is finished, update both page and console
-			// document.getElementById('mainDiv').innerHTML = JSON.stringify(vertexArray[0]);
+			// document.getElementById('mainDiv').innerHTML = JSON.stringify(verticesFromBackend[0]);
 			document.getElementById('mainDiv').innerHTML = "done";
 
 			// pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( vertexGeometriesPicking ), pickingMaterial ) );			
 			console.log("rendering finished");
+			// TODO render edges after all vertices are rendered
 		}
 	})
 	.catch(function(err) {
@@ -158,118 +158,38 @@ function drawEdge(fromPos, toPos) {
 	edgeGeometriesDrawn.push(edgeGeometry);
 }
 
-// handles edges array
-function parseEdgesArray(edges, pos) {
-	console.log("found edges\nedges length " + edges.length);
-	for (var i = 0; i < edges.length; ++i) {
-		let edge = edges[i];
-		let leadTo = JSON.stringify(edge["to"]);
-		// console.log("lead to " + leadTo);
-		if (verticesDrawn[leadTo]) {
-			// console.log(leadTo + " is already drawn, linking...");
-			drawEdge(pos, verticesDrawn[leadTo]);
-		} else {
-			// console.log(leadTo + " is not drawn, add to oweEdges map");
-			if (!(leadTo in oweEdges)) {
-				// console.log("creating entry for " + leadTo);
-				oweEdges[leadTo] = [];
-			}
-			oweEdges[leadTo].push(pos);
-		}
-	}
-}
-
-function payTheDebt(vid, pos) {
-	// if this vid owes other vertices edge
-	if (vid in oweEdges) {
-		console.log("vid " + vid + " paying debt...");
-		while(oweEdges[vid].length) {
-			drawEdge(pos, oweEdges[vid].pop());
-		}
-		// delete the entry in verticesDraw
-		delete oweEdges[vid];
-	}
-}
-
 // handle poses JSON
-function parsePoses(poses, vid) {
-	console.log("found poses");
+function parsePoses(vid, ori, pos) {
+    // console.log("vid " + vid
+    //             + "\nori: " + ori[0]
+    //             + "\npos: " + pos[0]);
 
-	var firstPose, ori, pos;
+    var geometry = new THREE.ConeBufferGeometry(0.5, 1, 8, 1, false, 0, 6.3);
 
-	if (poses !== undefined) {
-		for (var pose in poses) {
-			firstPose = pose;
-			ori = poses[pose].ori;
-			pos = poses[pose].pos;
-			if (ori !== undefined && pos !== undefined) {
-				// console.log("first pose " + firstPose
-				// 			+ "\nori: " + ori
-				// 			+ "\npos: " + pos);
+    var matrix = new THREE.Matrix4();
+    var position = new THREE.Vector3(pos[0], pos[1], pos[2]);
+    var quaternion = new THREE.Quaternion(ori[1], ori[2], ori[3], ori[0]);
+    var rotation = new THREE.Euler().setFromQuaternion(quaternion);
 
-				var geometry = new THREE.ConeBufferGeometry(0.5, 1, 8, 1, false, 0, 6.3);
+    matrix.compose(position, quaternion, scale);
+    geometry.applyMatrix(matrix);
+    // give the geometry's vertices color
+    applyVertexColors(geometry, color.setHex(colorVertex));
+    vertexGeometriesDrawn.push(geometry);
 
-				var matrix = new THREE.Matrix4();
-				var position = new THREE.Vector3(pos[0], pos[1], pos[2]);
-				var quaternion = new THREE.Quaternion(ori[1], ori[2], ori[3], ori[0]);
-				var rotation = new THREE.Euler().setFromQuaternion(quaternion);
+    // the rest of this section servers the pick function
+    geometry = geometry.clone();
+    // give the geometry's vertices a color corresponding to the id
+    applyVertexColors(geometry, color.setHex(universalCounter));
 
-				matrix.compose(position, quaternion, scale);
-				geometry.applyMatrix(matrix);
-				// give the geometry's vertices color
-				applyVertexColors(geometry, color.setHex(colorVertex));
-				vertexGeometriesDrawn.push(geometry);
+    // vertexGeometriesPicking.push(geometry);
 
-				// the rest of this section servers the pick function
-				geometry = geometry.clone();
-				// give the geometry's vertices a color corresponding to the id
-				applyVertexColors(geometry, color.setHex(universalCounter));
-
-				// vertexGeometriesPicking.push(geometry);
-
-				// pickingData[universalCounter] = {
-				// 	position: position,
-				// 	rotation: rotation,
-				// 	vid: vid
-				// };
-				++universalCounter;
-				verticesDrawn[vid] = pos;
-				// if this vid is in oweEdges, need to clear the corresponding entry and draw edges
-				payTheDebt(vid, pos);
-				return pos;
-			}
-
-		}
-
-	} else {
-		console.log("pose is undefined");
-	}
-	return undefined;
-}
-
-function parseVertex(vertex) {
-	var edges;
-	var poses;
-	var pos;
-	console.log("parsing " + vertex.vid);
-	// iterate on all field in this JSON
-	for (var item in vertex) {
-		if (item === "edges") {
-			edges = vertex[item];
-		} else if (item === "poses") {
-			poses = vertex[item];
-		}
-	}
-	// check poses and edges separately
-	// as some vertices do not have edges field
-	if (poses) {
-		pos = parsePoses(poses, vertex.vid);
-	}
-
-	// connect edges to neighbors
-	if (edges && pos) {
-		parseEdgesArray(edges, pos);
-	}
+    // pickingData[universalCounter] = {
+    // 	position: position,
+    // 	rotation: rotation,
+    // 	vid: vid
+    // };
+    ++universalCounter;
 }
 
 /******************************************* three.js **************************************************/
