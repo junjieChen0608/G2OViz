@@ -126,7 +126,7 @@ app.get('/queryGraphVertex/:graphName/:vertexBatchSize/:iteration', (req, res) =
 
 */
 var verticesToRespond; // record response for each batch query, reset in queryGraphVertex
-var verticesDrawn; // record all vertice in this graph, reset in countVertex
+var verticesDrawn; // record all vertices in this graph, reset in countVertex
 var verticesDrawnArrayView; // provide an indexed view of verticesDrawn
 
 /*

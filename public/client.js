@@ -45,9 +45,10 @@ function countEdge(graphName) {
 	})
 	.then(function(responseJSON) {
 		console.log("total edges " + JSON.stringify(responseJSON));
+        queryGraphEdge(graphName, edgeBatchSize, 0);
 	})
 	.catch(function(err) {
-		document.getElementById('mainDiv').innerHTML = "count edges failed"
+		document.getElementById('mainDiv').innerHTML = "count edges failed";
 		console.log(err);
 	});
 }
@@ -106,7 +107,7 @@ function queryGraphVertex(graphName, vertexBatchSize, iteration) {
 
 		for (var vid in verticesFromBackend) {
 		    var curVertex = verticesFromBackend[vid];
-            parsePoses(vid, curVertex["ori"], curVertex["pos"]);
+            drawVertex(vid, curVertex["ori"], curVertex["pos"]);
         }
 
 		// merge all drawn vertex geometries to render a single mesh
@@ -126,9 +127,8 @@ function queryGraphVertex(graphName, vertexBatchSize, iteration) {
 
 			// pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( vertexGeometriesPicking ), pickingMaterial ) );			
             console.log("draw vertices from back-end DONE");
-			// render edges after all vertices are rendered
-            // by calling query edge API
-            queryGraphEdge(graphName, edgeBatchSize, 0);
+			// query edge count of given graph
+			countEdge(graphName);
 		}
 	})
 	.catch(function(err) {
@@ -137,7 +137,7 @@ function queryGraphVertex(graphName, vertexBatchSize, iteration) {
 	});
 }
 
-// TODO implement query given graph's edges
+// query given graph's edges batch by batch, then draw them
 function queryGraphEdge(graphName, edgeBatchSize, index) {
     fetch('/queryGraphEdge/' + graphName + '/' + edgeBatchSize + '/' + index, {method: 'GET'})
     .then(function(response) {
@@ -204,7 +204,7 @@ function drawEdge(fromPos, toPos) {
 }
 
 // handle poses JSON
-function parsePoses(vid, ori, pos) {
+function drawVertex(vid, ori, pos) {
     // console.log("vid " + vid
     //             + "\nori: " + ori[0]
     //             + "\npos: " + pos[0]);
@@ -441,77 +441,3 @@ function pick() {
 		highlightBox.visible = false;
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/******************************************* crazy *******************************************/
-
-	// var matrix = new THREE.Matrix4();
-	// var quaternion = new THREE.Quaternion();
-
-	// for ( var i = 0; i < 100; i ++ ) {
-
-	// 	var geometry = new THREE.ConeBufferGeometry(2.0, 15, 8, 1, false, 0, 6.3);
-	// 	var position = new THREE.Vector3();
-	// 	position.x = Math.random() * 10000 - 5000;
-	// 	position.y = Math.random() * 6000 - 3000;
-	// 	position.z = Math.random() * 8000 - 4000;
-
-	// 	var rotation = new THREE.Euler();
-	// 	rotation.x = Math.random() * 2 * Math.PI;
-	// 	rotation.y = Math.random() * 2 * Math.PI;
-	// 	rotation.z = Math.random() * 2 * Math.PI;
-
-	// 	quaternion.setFromEuler( rotation, false );
-	// 	matrix.compose( position, quaternion, scale );
-
-	// 	geometry.applyMatrix( matrix );
-
-	// 	// give the geometry's vertices a random color, to be displayed
-
-	// 	applyVertexColors( geometry, color.setHex( colorVertex) );
-
-	// 	vertexGeometriesDrawn.push( geometry );
-
-	// 	geometry = geometry.clone();
-	// 	// give the geometry's vertices a color corresponding to the "id"
-
-	// 	applyVertexColors( geometry, color.setHex( i ) );
-
-	// 	vertexGeometriesPicking.push( geometry );
-
-	// 	pickingData[ i ] = {
-	// 		position: position,
-	// 		rotation: rotation,
-	// 		scale: scale
-	// 	};
-
-	// }
-
-	// drawRandomEdges(vertexGeometriesDrawn);
-
-/******************************************* crazy *******************************************/
