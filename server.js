@@ -47,6 +47,7 @@ app.get('/countEdge/:graphName', (req, res) => {
 			if (err) {
 				console.log(err);
 			} else {
+				console.log("back-end counted " + JSON.stringify(edgeCounter) + " edges");
 				res.send(edgeCounter.toString());
 			}
 		}
