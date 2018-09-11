@@ -47,7 +47,8 @@ app.get('/countEdge/:graphName', (req, res) => {
 			if (err) {
 				console.log(err);
 			} else {
-				console.log("back-end counted " + JSON.stringify(edgeCounter) + " edges");
+				console.log("back-end counted " + JSON.stringify(edgeCounter) + " edges"
+                            + "\n***********************************************************\n");
 				res.send(edgeCounter.toString());
 			}
 		}
@@ -91,14 +92,14 @@ app.get('/queryGraphVertex/:graphName/:selectedPose/:vertexBatchSize/:iteration'
 		  .limit(parseInt(vertexBatchSize, 10))
 		  .forEach(function iterCallback(vertex) {
 		  	// parse this batch of vertex
-		  	parseVertex(vertex);
+		  	parseVertex(vertex, selectedPose);
 		  },
 		  function endCallback(err) {
 		  	if (err) {
 		  		console.log(err);
 		  	} else {
 		  		// second pass: check if there is any vertex not drawn
-		  		console.log("first pass DONE all vertices parsed in back-end\n"
+		  		console.log("this batch of vertex parsed in back-end\n"
 		  					+ "verticesToRespond size " + Object.keys(verticesToRespond).length
 		  					+ "\nverticesDrawn size " + Object.keys(verticesDrawn).length);
 
@@ -138,12 +139,13 @@ var verticesDrawnArrayView; // provide an indexed view of verticesDrawn
 */
 
 // parse each vertex, in particular, extract its ori, pos, and edges
-function parseVertex(vertex) {
+function parseVertex(vertex, selectedPose) {
 	var edges;
 	var poses;
 	var extractFull = {"ori": undefined,
 					   "pos": undefined,
 					   "edges": []};
+
 	var vid = vertex.vid;
 	// console.log("parsing " + vid);
 
@@ -157,32 +159,37 @@ function parseVertex(vertex) {
 	}
 
 	if (poses) {
-		parsePoses(poses, extractFull);
+		parsePoses(poses, selectedPose, extractFull);
 	}
 
-	if (edges) {
-		parseEdges(edges, extractFull);
-	}
-	
-	verticesToRespond[vid] = extractFull;
-	verticesDrawn[vid] = extractFull;
+	// make sure ori and pos is not undefined
+    if (extractFull["ori"] && extractFull["pos"]) {
+        if (edges) {
+            parseEdges(edges, extractFull);
+        }
+        verticesToRespond[vid] = extractFull;
+        verticesDrawn[vid] = extractFull;
+    } else {
+        // console.log(vid + " does not have pose " + selectedPose);
+    }
 	// console.log("vid " + vid
 	// 			+ "\nextractFull: " + JSON.stringify(verticesToRespond[vid]));
 }
 
 // extract ori, pos
-function parsePoses(poses, extractFull) {
-	var firstPose, ori, pos;
+function parsePoses(poses, selectedPose, extractFull) {
+	var  ori, pos;
 
 	for (var pose in poses) {
-		firstPose = pose;
-		ori = poses[pose].ori;
-		pos = poses[pose].pos;
-		if (ori && pos) {
-			extractFull["ori"] = ori;
-			extractFull["pos"] = pos;
-			break;
-		}
+		if (pose === selectedPose) {
+            ori = poses[pose].ori;
+            pos = poses[pose].pos;
+            if (ori && pos) {
+                extractFull["ori"] = ori;
+                extractFull["pos"] = pos;
+                break;
+            }
+        }
 	}
 }
 
@@ -236,8 +243,13 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
             for (var i = 0; i < edges.length; ++i) {
                 var leadTo = edges[i];
                 // console.log("from " + vid + " to " + leadTo);
-                var toPos = verticesDrawn[leadTo]["pos"];
-                edgesToRespond["edges"].push({"fromPos": fromPos, "toPos": toPos});
+
+                // check if this vertex's neighbor is also drawn
+                // as certain neighbors do not have selected pose
+                if (verticesDrawn[leadTo]) {
+                    var toPos = verticesDrawn[leadTo]["pos"];
+                    edgesToRespond["edges"].push({"fromPos": fromPos, "toPos": toPos});
+                }
             }
 
             if (edgesToRespond["edges"].length >= edgeBatchSize) {

@@ -6,7 +6,7 @@ const vertexBatchSize = 5000;
 const edgeBatchSize = 20000;
 var totalIteration = 0;
 var totalVertex = 0;
-var totalEdge = 0;
+var totalEdgeDrawn = 0;
 
 
 const button = document.getElementById('render');
@@ -62,7 +62,7 @@ function countEdge(graphName) {
 // query the given graph to count total vertices
 function countVertex(graphName, selectedPose) {
 	console.log('count graph ' + graphName);
-    totalEdge = 0;
+    totalEdgeDrawn = 0;
 	fetch('/countVertex/' + graphName, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
@@ -128,7 +128,7 @@ function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
 
 		if (++iteration < totalIteration) {
 			// recursive call, query next batch of vertex
-			queryGraphVertex(graphName, vertexBatchSize, iteration);
+			queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration);
 		} else {
 			// query is finished, update both page and console
 			document.getElementById('mainDiv').innerHTML = "done";
@@ -159,9 +159,9 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
         var edgesFromBackend = JSON.parse(JSON.stringify(responseJSON));
         var backEndIndex = edgesFromBackend["index"];
         var backEndEdgeCount = edgesFromBackend["edgeCount"];
-        console.log("backend index: " + backEndIndex
-                    + "\nbackend edge count " + backEndEdgeCount);
-        totalEdge += backEndEdgeCount;
+        // console.log("backend index: " + backEndIndex
+        //             + "\nbackend edge count " + backEndEdgeCount);
+        totalEdgeDrawn += backEndEdgeCount;
         // var head = edgesFromBackend["edges"][0]["fromPos"];
         // console.log(head[0]);
 
@@ -184,7 +184,8 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
             queryGraphEdge(graphName, edgeBatchSize, ++backEndIndex);
         } else {
             console.log("draw edges from back-end DONE"
-                        + "\ntotal " + totalEdge + " drawn");
+                        + "\ntotal " + totalEdgeDrawn + " drawn");
+            console.log("\n****************************************\n");
         }
 
     })
