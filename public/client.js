@@ -17,8 +17,14 @@ button.addEventListener('click', function(event) {
 	if (graphName[0] == '/') {
 		graphName = replaceSlash(graphName);
 	}
-	
-	countVertex(graphName);
+
+	var selectedPose = document.getElementById('selectedPose').value;
+    console.log("selected pose: " + selectedPose);
+    if (selectedPose !== "") {
+        countVertex(graphName, selectedPose);
+    } else {
+        mainDiv.innerHTML = "Please select a pose";
+    }
 });
 
 // enable press enter to query
@@ -54,7 +60,7 @@ function countEdge(graphName) {
 }
 
 // query the given graph to count total vertices
-function countVertex(graphName) {
+function countVertex(graphName, selectedPose) {
 	console.log('count graph ' + graphName);
     totalEdge = 0;
 	fetch('/countVertex/' + graphName, {method: 'GET'})
@@ -77,7 +83,7 @@ function countVertex(graphName) {
 		if (totalVertex > 0) {
 			init();
 			animate();
-			queryGraphVertex(graphName, vertexBatchSize, 0);
+			queryGraphVertex(graphName, selectedPose, vertexBatchSize, 0);
 		} else {
 			throw new Error('count vertex failed');		
 		}
@@ -89,8 +95,12 @@ function countVertex(graphName) {
 }
 
 // query given graph, response is a batch size of vertices
-function queryGraphVertex(graphName, vertexBatchSize, iteration) {
-	fetch('/queryGraphVertex/' + graphName + '/' + vertexBatchSize + '/' + iteration, {method: 'GET'})
+function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
+	fetch('/queryGraphVertex/'
+          + graphName + '/'
+          + selectedPose + '/'
+          + vertexBatchSize + '/'
+          + iteration, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
 			console.log('query graph vertices successful');
@@ -102,7 +112,6 @@ function queryGraphVertex(graphName, vertexBatchSize, iteration) {
 		console.log("draw vertices from back-end");
 
 		verticesFromBackend = JSON.parse(JSON.stringify(responseJSON));
-        // console.log("vertex array length " + verticesFromBackend.length);
 		console.log("back-end vertex length " + Object.keys(verticesFromBackend).length);
 
 		for (var vid in verticesFromBackend) {
@@ -122,7 +131,6 @@ function queryGraphVertex(graphName, vertexBatchSize, iteration) {
 			queryGraphVertex(graphName, vertexBatchSize, iteration);
 		} else {
 			// query is finished, update both page and console
-			// document.getElementById('mainDiv').innerHTML = JSON.stringify(verticesFromBackend[0]);
 			document.getElementById('mainDiv').innerHTML = "done";
 
 			// pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( vertexGeometriesPicking ), pickingMaterial ) );			

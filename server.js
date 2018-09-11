@@ -72,13 +72,15 @@ app.get('/countVertex/:graphName', (req, res) => {
 });
 
 // query vertices of given graph
-app.get('/queryGraphVertex/:graphName/:vertexBatchSize/:iteration', (req, res) => {
+app.get('/queryGraphVertex/:graphName/:selectedPose/:vertexBatchSize/:iteration', (req, res) => {
 	verticesToRespond = {};
 
 	var graphName = req.params.graphName;
+	var selectedPose = req.params.selectedPose;
 	var vertexBatchSize = req.params.vertexBatchSize;
 	var iteration = req.params.iteration;
 	console.log("graph to query: " + graphName
+                + "\nselected pose: " + selectedPose
 				+ "\nbatch size: " + vertexBatchSize
 				+ "\niteration: " + iteration);
 
@@ -88,7 +90,7 @@ app.get('/queryGraphVertex/:graphName/:vertexBatchSize/:iteration', (req, res) =
 	cursor.skip(iteration * vertexBatchSize)
 		  .limit(parseInt(vertexBatchSize, 10))
 		  .forEach(function iterCallback(vertex) {
-		  	// first pass: parse all vertices here
+		  	// parse this batch of vertex
 		  	parseVertex(vertex);
 		  },
 		  function endCallback(err) {
