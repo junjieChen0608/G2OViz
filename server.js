@@ -276,7 +276,7 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
     }
   */
 
-// TODO implement API for single vertex's neighbor query
+// API for single vertex's neighbor query
 app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
    var graphName = req.params.graphName;
    var vid = req.params.vid;

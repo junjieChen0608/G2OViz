@@ -122,7 +122,8 @@ function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
 
 		// merge all drawn vertex geometries to render a single mesh
 		if (vertexGeometriesDrawn.length) {
-			var mergedVertexObjects = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(vertexGeometriesDrawn), defaultMaterial);
+			var mergedVertexObjects = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(vertexGeometriesDrawn),
+                                                     defaultMaterial);
 			scene.add(mergedVertexObjects);
 		}
 		vertexGeometriesDrawn = [];
@@ -134,7 +135,8 @@ function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
 			// query is finished, update both page and console
 			document.getElementById('mainDiv').innerHTML = "done";
 
-			// pickingScene.add( new THREE.Mesh( THREE.BufferGeometryUtils.mergeBufferGeometries( vertexGeometriesPicking ), pickingMaterial ) );			
+			// pickingScene.add(new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(vertexGeometriesPicking),
+            //                                 pickingMaterial));
             console.log("draw vertices from back-end DONE");
 			// query edge count of given graph
 			countEdge(graphName);
@@ -175,7 +177,8 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
 
         // merge all drawn edge geometries to render a single line segment
         if (edgeGeometriesDrawn.length) {
-        	var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn), lineMaterial);
+        	var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn),
+                                                          lineMaterial);
         	scene.add(mergedEdgeObject);
         }
         edgeGeometriesDrawn = [];
@@ -217,7 +220,9 @@ function getVertexNeighbors(graphName, vid) {
         console.log(vid + " has " + edges.length + " edges");
 
         // iterate on the array to draw green LineSegment as selectable edges
-
+        // TODO implement a new function to draw green selectable edge
+        // for different data structure is used to store selectable edges
+        
         // add all selectable edges to an array
 
         // enable raycaster at 60FPS to only detect the selectable edges
@@ -349,8 +354,11 @@ function initInvariants() {
 	pickingTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
 	pickingTexture.texture.minFilter = THREE.LinearFilter;
 
-	pickingMaterial = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors } );
-	defaultMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true, vertexColors: THREE.VertexColors, shininess: 0	} );
+	pickingMaterial = new THREE.MeshBasicMaterial({vertexColors: THREE.VertexColors});
+	defaultMaterial = new THREE.MeshPhongMaterial({color: 0xffffff,
+                                                   flatShading: true,
+                                                   vertexColors: THREE.VertexColors,
+                                                   shininess: 0});
 	lineMaterial = new THREE.LineBasicMaterial({color: colorEdge});
 	
 	scene = new THREE.Scene();
@@ -430,7 +438,7 @@ function highlight(objectsToIntersect) {
 		currentIntersected = intersects[0].object;
 		highlightIntersect();
 
-        // TODO this click event should trigger a query
+        // this click event triggers a query
         if (currentIntersected.userData["vid"]) {
             getVertexNeighbors(graphName, currentIntersected.userData["vid"]);
         }
