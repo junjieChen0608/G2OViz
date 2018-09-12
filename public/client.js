@@ -94,6 +94,7 @@ function countVertex(graphName, selectedPose) {
 	});
 }
 
+var totalVertexObjectDrawn = [];
 // query given graph, response is a batch size of vertices
 function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
 	fetch('/queryGraphVertex/'
@@ -184,7 +185,7 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
             queryGraphEdge(graphName, edgeBatchSize, ++backEndIndex);
         } else {
             console.log("draw edges from back-end DONE"
-                        + "\ntotal " + totalEdgeDrawn + " drawn");
+                        + "\ntotal " + totalEdgeDrawn + " edges drawn");
             console.log("\n****************************************\n");
         }
 
@@ -230,6 +231,11 @@ function drawVertex(vid, ori, pos) {
     // give the geometry's vertices color
     applyVertexColors(geometry, color.setHex(colorVertex));
     vertexGeometriesDrawn.push(geometry);
+    var vertexObject = new THREE.Mesh(geometry, defaultMaterial);
+    vertexObject.position.copy(position);
+    vertexObject.rotation.copy(rotation);
+
+    totalVertexObjectDrawn.push(vertexObject);
 
     // the rest of this section servers the pick function
     geometry = geometry.clone();
@@ -323,8 +329,9 @@ function initInvariants() {
 	light.position.set(10000, 10000, 10000);
 	scene.add(light);
 
-	highlightBox = new THREE.Mesh(new THREE.ConeBufferGeometry(1.5, 5.5, 8, 1, false, 0, 6.3),
+	highlightBox = new THREE.Mesh(new THREE.ConeBufferGeometry(0.6, 1.1, 8, 1, false, 0, 6.3),
 								  new THREE.MeshLambertMaterial( { color: 0xffff00 }));
+	highlightBox.scale.copy(scale);
 	scene.add(highlightBox);
 	
 	raycaster = new THREE.Raycaster();
@@ -345,7 +352,7 @@ function initInvariants() {
 function onDocumentMouseMove(event) {
 
 	// event.preventDefault();
-	rayTracer.x = ( event.offsetX / window.innerWidth ) * 2 - 1;
+	rayTracer.x = ( event.offsetX / window.innerWidth) * 2 - 1;
 	rayTracer.y = - ( event.offsetY / window.innerHeight ) * 2 + 1;
 
 	mouse.x = event.offsetX;
@@ -361,7 +368,8 @@ function animate() {
 
 function render() {
 	controls.update();
-	pick();
+	// pick();
+    // highlight();
 	renderer.render( scene, camera );
 }
 
@@ -369,7 +377,7 @@ function highlight() {
 
 	raycaster.setFromCamera(rayTracer, camera);
 
-	var intersects = raycaster.intersectObjects(edgeGeometriesDrawn);
+	var intersects = raycaster.intersectObjects(totalVertexObjectDrawn);
 
 	// intersected
 	if ( intersects.length > 0 ) {
@@ -394,14 +402,21 @@ function highlight() {
 
 // highlight intersected element
 function highlightIntersect() {
-	currentIntersected.material.linewidth = 5;
-	scene.add(currentIntersected);
+    console.log("hit vertex");
+    highlightBox.position.copy(currentIntersected.position);
+    highlightBox.rotation.copy(currentIntersected.rotation);
+    highlightBox.visible = true;
+
+	// currentIntersected.material.linewidth = 5;
+	// scene.add(currentIntersected);
 }
 
 // reset previously highlighted element
 function resetPrevIntersect() {
-	currentIntersected.material.linewidth = 1;
-	scene.remove(currentIntersected);
+    console.log("reset hit");
+    highlightBox.visible = false;
+	// currentIntersected.material.linewidth = 1;
+	// scene.remove(currentIntersected);
 }
 
 function applyVertexColors( geometry, color ) {
