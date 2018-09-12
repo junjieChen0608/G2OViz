@@ -346,11 +346,17 @@ function initInvariants() {
 	container.appendChild( stats.dom );
 
 	renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
+    renderer.domElement.addEventListener('mouseup', onDocumentMouseClick);
 	initControls();
 }
 
-function onDocumentMouseMove(event) {
+function onDocumentMouseClick(event) {
+    if (event.button === 0) {
+        highlight();
+    }
+}
 
+function onDocumentMouseMove(event) {
 	// event.preventDefault();
 	rayTracer.x = ( event.offsetX / window.innerWidth) * 2 - 1;
 	rayTracer.y = - ( event.offsetY / window.innerHeight ) * 2 + 1;
