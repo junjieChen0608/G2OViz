@@ -121,7 +121,7 @@ app.get('/queryGraphVertex/:graphName/:selectedPose/:vertexBatchSize/:iteration'
 		vid: {
 			ori: [w, x, y, z],
 			pos: [x, y, z],
-			edges: [vid...]
+			edges: [vid, ...]
 		}
 		.
 		.
@@ -240,8 +240,9 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
             var edges = verticesDrawn[vid]["edges"];
             // console.log("vid " + vid + " has " + edges.length + " edges");
 
+            var leadTo;
             for (var i = 0; i < edges.length; ++i) {
-                var leadTo = edges[i];
+                leadTo = edges[i];
                 // console.log("from " + vid + " to " + leadTo);
 
                 // check if this vertex's neighbor is also drawn
@@ -260,4 +261,50 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
     edgesToRespond["index"] = index;
     edgesToRespond["edgeCount"] = edgesToRespond["edges"].length;
     res.send(edgesToRespond);
+});
+
+/*
+    response object structure
+    {
+        "fromPos": [x, y, z],
+        "edges": [
+                    {vid: toPos},
+                    .
+                    .
+                    .
+                 ]
+    }
+  */
+
+// TODO implement API for single vertex's neighbor query
+app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
+   var graphName = req.params.graphName;
+   var vid = req.params.vid;
+
+   console.log("query graph " + graphName
+                + "\nvid " + vid);
+
+   if (verticesDrawn[vid]) {
+       var response = {};
+       response["fromPos"] = verticesDrawn[vid]["pos"];
+       var edges = [];
+
+       var leadTo;
+       for (var i = 0; i < verticesDrawn[vid]["edges"].length; ++i) {
+           leadTo = verticesDrawn[vid]["edges"][i];
+
+           // check if this neighbor is drawn
+           if (verticesDrawn[leadTo]) {
+               var neighbor = {};
+               neighbor[leadTo] = verticesDrawn[leadTo]["pos"];
+               edges.push(neighbor);
+           }
+       }
+       response["edges"] = edges;
+       console.log("response object\n" + JSON.stringify(response));
+       res.send(response);
+   } else {
+       console.log(vid + " is NOT drawn");
+       res.sendStatus(404);
+   }
 });

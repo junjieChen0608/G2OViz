@@ -7,13 +7,13 @@ const edgeBatchSize = 20000;
 var totalIteration = 0;
 var totalVertex = 0;
 var totalEdgeDrawn = 0;
-
+var graphName = "";
 
 const button = document.getElementById('render');
 button.addEventListener('click', function(event) {
 	counter = 0;
 	console.log('button clicked');
-	var graphName = document.getElementById('graphName').value;
+	graphName = document.getElementById('graphName').value;
 	if (graphName[0] == '/') {
 		graphName = replaceSlash(graphName);
 	}
@@ -195,6 +195,38 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
     });
 }
 
+// TODO query given vertex's neighbors
+function getVertexNeighbors(graphName, vid) {
+    console.log("query graph " + graphName
+                + "\nvid " + vid);
+
+    fetch('/getVertexNeighbor/' + graphName + '/' + vid, {method: 'GET'})
+    .then(function(response) {
+        if (response.ok) {
+            console.log("get vertex neighbors successful");
+            return response.json();
+        }
+        throw new Error("get vertex neighbors failed");
+    })
+    .then(function(responseJSON) {
+        var neighborsFromBackend = JSON.parse(JSON.stringify(responseJSON));
+        // console.log(neighborsFromBackend);
+        var fromPos = neighborsFromBackend["fromPos"];
+        var edges = neighborsFromBackend["edges"];
+        console.log(vid + " pos " + fromPos);
+        console.log(vid + " has " + edges.length + " edges");
+
+        // iterate on the array to draw green LineSegment as selectable edges
+
+        // add all selectable edges to an array
+
+        // enable raycaster at 60FPS to only detect the selectable edges
+    })
+    .catch(function(err) {
+        console.log(err);
+    });
+}
+
 // replace slash to %2F in the query url
 function replaceSlash(input) {
 	console.log("replacing slash for " + input);
@@ -234,13 +266,14 @@ function drawVertex(vid, ori, pos) {
     var vertexObject = new THREE.Mesh(geometry, defaultMaterial);
     vertexObject.position.copy(position);
     vertexObject.rotation.copy(rotation);
+    vertexObject.userData = {"vid": vid};
 
     totalVertexObjectDrawn.push(vertexObject);
 
     // the rest of this section servers the pick function
-    geometry = geometry.clone();
+    // geometry = geometry.clone();
     // give the geometry's vertices a color corresponding to the id
-    applyVertexColors(geometry, color.setHex(universalCounter));
+    // applyVertexColors(geometry, color.setHex(universalCounter));
 
     // vertexGeometriesPicking.push(geometry);
 
@@ -249,7 +282,7 @@ function drawVertex(vid, ori, pos) {
     // 	rotation: rotation,
     // 	vid: vid
     // };
-    ++universalCounter;
+    // ++universalCounter;
 }
 
 /******************************************* three.js **************************************************/
@@ -352,7 +385,7 @@ function initInvariants() {
 
 function onDocumentMouseClick(event) {
     if (event.button === 0) {
-        highlight();
+        highlight(totalVertexObjectDrawn);
     }
 }
 
@@ -379,11 +412,11 @@ function render() {
 	renderer.render( scene, camera );
 }
 
-function highlight() {
+function highlight(objectsToIntersect) {
 
 	raycaster.setFromCamera(rayTracer, camera);
 
-	var intersects = raycaster.intersectObjects(totalVertexObjectDrawn);
+	var intersects = raycaster.intersectObjects(objectsToIntersect);
 
 	// intersected
 	if ( intersects.length > 0 ) {
@@ -396,6 +429,11 @@ function highlight() {
 
 		currentIntersected = intersects[0].object;
 		highlightIntersect();
+
+        // TODO this click event should trigger a query
+        if (currentIntersected.userData["vid"]) {
+            getVertexNeighbors(graphName, currentIntersected.userData["vid"]);
+        }
 
 	} else {
 		// not intersected, need to reset state if something is intersected previously
