@@ -45,13 +45,9 @@ function countEdge(graphName) {
 	.then(function(response) {
 		if (response.ok) {
 			console.log('count edges successful');
-			return response.json();
+            queryGraphEdge(graphName, edgeBatchSize, 0);
 		}
 		throw new Error('count edges failed');
-	})
-	.then(function(responseJSON) {
-		console.log("total edges " + JSON.stringify(responseJSON));
-        queryGraphEdge(graphName, edgeBatchSize, 0);
 	})
 	.catch(function(err) {
 		document.getElementById('mainDiv').innerHTML = "count edges failed";
@@ -460,6 +456,7 @@ function animate() {
 function render() {
 	controls.update();
     // TODO need a switch to toggle raycaster to intersect selectableEdges
+
     // highlight();
 	renderer.render( scene, camera );
 }
@@ -475,9 +472,8 @@ function highlight(objectsToIntersect) {
 	if ( intersects.length > 0 ) {
 		
 		// something is intersected previously, need to reset
-		if (currentIntersected !== undefined &&
-			intersects[0].object !== currentIntersected) {
-			resetPrevIntersect(currentIntersected);
+		if (currentIntersected !== undefined) {
+			resetPrevIntersect();
 		}
 
 		currentIntersected = intersects[0].object;

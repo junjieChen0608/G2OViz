@@ -35,24 +35,28 @@ app.get('/countEdge/:graphName', (req, res) => {
 	var graphName = req.params.graphName;
 	console.log("graph to count edge: " + graphName);
 
-	var edgeCounter = 0;
-	db.collection('vertices').find({graph_name: graphName}).forEach(
-		function iterCallback(vertex) {
-			if (vertex.edges && vertex.edges.length) {
-				edgeCounter += vertex.edges.length;
-				// console.log("edges " + edgeCounter);
-			}
-		},
-		function endCallback(err) {
-			if (err) {
-				console.log(err);
-			} else {
-				console.log("back-end counted " + JSON.stringify(edgeCounter) + " edges"
-                            + "\n***********************************************************\n");
-				res.send(edgeCounter.toString());
-			}
-		}
-	);
+	// TODO simplify the count logic, just send status 200
+    res.sendStatus(200);
+
+	// var edgeCounter = 0;
+	// db.collection('vertices').find({graph_name: graphName}).forEach(
+	// 	function iterCallback(vertex) {
+	// 		if (vertex.edges && vertex.edges.length) {
+	// 			edgeCounter += vertex.edges.length;
+	// 			// console.log("edges " + edgeCounter);
+	// 		}
+	// 	},
+	// 	function endCallback(err) {
+	// 		if (err) {
+	// 			console.log(err);
+	// 		} else {
+	// 			console.log("back-end counted " + JSON.stringify(edgeCounter) + " edges"
+    //                         + "\n***********************************************************\n");
+	// 			res.send(edgeCounter.toString());
+	// 		}
+	// 	}
+	// );
+
 });
 
 // count total vertex
