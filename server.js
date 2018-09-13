@@ -116,7 +116,7 @@ app.get('/queryGraphVertex/:graphName/:selectedPose/:vertexBatchSize/:iteration'
 });
 
 /*
-	the response vertex object
+	verticesToRespond object
 	{
 		vid: {
 			ori: [w, x, y, z],
@@ -201,7 +201,7 @@ function parseEdges(edges, extractFull) {
 }
 
 /*
-    the response edge object
+    edgesToRespond structure
     {
         index: number,
         edgeCount: number,
@@ -264,15 +264,15 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
 });
 
 /*
-    response object structure
+    response structure
     {
         "fromPos": [x, y, z],
-        "edges": [
-                    {vid: toPos},
+        "edges": {
+                    vid: toPos,
                     .
                     .
                     .
-                 ]
+                 }
     }
   */
 
@@ -287,7 +287,7 @@ app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
    if (verticesDrawn[vid]) {
        var response = {};
        response["fromPos"] = verticesDrawn[vid]["pos"];
-       var edges = [];
+       var edges = {};
 
        var leadTo;
        for (var i = 0; i < verticesDrawn[vid]["edges"].length; ++i) {
@@ -295,9 +295,7 @@ app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
 
            // check if this neighbor is drawn
            if (verticesDrawn[leadTo]) {
-               var neighbor = {};
-               neighbor[leadTo] = verticesDrawn[leadTo]["pos"];
-               edges.push(neighbor);
+               edges[leadTo] = verticesDrawn[leadTo]["pos"];
            }
        }
        response["edges"] = edges;

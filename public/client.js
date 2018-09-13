@@ -199,6 +199,9 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
 }
 
 // TODO query given vertex's neighbors
+var selectableEdges = [];
+var selectableEdgeGeometries = [];
+var mergedSelectableObject;
 function getVertexNeighbors(graphName, vid) {
     console.log("query graph " + graphName
                 + "\nvid " + vid);
@@ -212,24 +215,42 @@ function getVertexNeighbors(graphName, vid) {
         throw new Error("get vertex neighbors failed");
     })
     .then(function(responseJSON) {
+
         var neighborsFromBackend = JSON.parse(JSON.stringify(responseJSON));
         // console.log(neighborsFromBackend);
         var fromPos = neighborsFromBackend["fromPos"];
         var edges = neighborsFromBackend["edges"];
+        var edgesKeyView = Object.keys(edges);
+
         console.log(vid + " pos " + fromPos);
-        console.log(vid + " has " + edges.length + " edges");
+        console.log(vid + " has " + edgesKeyView.length + " edges");
 
         // iterate on the array to draw green LineSegment as selectable edges
-        // TODO implement a new function to draw green selectable edge
-        // for different data structure is used to store selectable edges
-        
-        // add all selectable edges to an array
+        var leadTo;
+        for (var i = 0; i < edgesKeyView.length; ++i) {
+            leadTo = edgesKeyView[i];
+            drawSelectableEdge(fromPos, edges[leadTo]);
+        }
 
-        // enable raycaster at 60FPS to only detect the selectable edges
+        // merge and render all drawn green line segments
+        if (selectableEdgeGeometries.length) {
+            mergedSelectableObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(selectableEdgeGeometries),
+                                                                selectableLineMaterial);
+            scene.add(mergedSelectableObject);
+        }
+        selectableEdgeGeometries = [];
+
     })
     .catch(function(err) {
         console.log(err);
     });
+}
+
+// dispose given object and remove it from scene
+function disposeObject(obj) {
+    obj.geometry.dispose();
+    obj.material.dispose();
+    scene.remove(obj);
 }
 
 // replace slash to %2F in the query url
@@ -238,16 +259,36 @@ function replaceSlash(input) {
 	return input.replace(/\//g, '%2F');
 }
 
+// helper function to extract points from starting and ending pos
+function extractPoints(fromPos, toPos) {
+    return [
+        fromPos[0], fromPos[1], fromPos[2],
+        toPos[0], toPos[1], toPos[2],
+    ];
+}
+
 // draw line segment
 function drawEdge(fromPos, toPos) {
-	var points = [
-		fromPos[0], fromPos[1], fromPos[2],
-		toPos[0], toPos[1], toPos[2],
-	];
-
+	var points = extractPoints(fromPos, toPos);
 	var edgeGeometry = new THREE.BufferGeometry();
 	edgeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
 	edgeGeometriesDrawn.push(edgeGeometry);
+}
+
+// draw selectable edges
+function drawSelectableEdge(fromPos, toPos) {
+    // console.log("draw selectable edge"
+    //             + "\nfrom " + fromPos
+    //             + "\nto " + toPos);
+
+    var points = extractPoints(fromPos, toPos);
+    var selectableEdgeGeometry = new THREE.BufferGeometry();
+    selectableEdgeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+    selectableEdgeGeometries.push(selectableEdgeGeometry);
+
+    // the actual LineSegments object to be selected
+    var selectableEdge = new THREE.LineSegments(selectableEdgeGeometry, selectableLineMaterial);
+    selectableEdges.push(selectableEdge);
 }
 
 // handle poses JSON
@@ -301,6 +342,7 @@ var currentIntersected;
 var pickingMaterial;
 var defaultMaterial;
 var lineMaterial;
+var selectableLineMaterial;
 
 var vertexGeometriesDrawn = [];
 var vertexGeometriesPicking = [];
@@ -315,6 +357,7 @@ var rayTracer = new THREE.Vector2();
 var color = new THREE.Color();
 const colorVertex = 0x135cd3;
 const colorEdge = 0x7f0026;
+const colorSelectableEdge = 0x29bf1e;
 const colorOnSelect = 0xefdc04;
 
 const scale = new THREE.Vector3(0.7, 0.7, 0.7);
@@ -360,7 +403,8 @@ function initInvariants() {
                                                    vertexColors: THREE.VertexColors,
                                                    shininess: 0});
 	lineMaterial = new THREE.LineBasicMaterial({color: colorEdge});
-	
+    selectableLineMaterial = new THREE.LineBasicMaterial({color: colorSelectableEdge});
+
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xd8d8d8);
 	scene.add(new THREE.AmbientLight(0x555555));
@@ -415,11 +459,12 @@ function animate() {
 
 function render() {
 	controls.update();
-	// pick();
+    // TODO need a switch to toggle raycaster to intersect selectableEdges
     // highlight();
 	renderer.render( scene, camera );
 }
 
+// TODO implement a switch to toggle between select mode and pan mode
 function highlight(objectsToIntersect) {
 
 	raycaster.setFromCamera(rayTracer, camera);
@@ -466,6 +511,13 @@ function highlightIntersect() {
 // reset previously highlighted element
 function resetPrevIntersect() {
     console.log("reset hit");
+    // need to dispose geometry and material to release memory
+    while (selectableEdges.length) {
+        disposeObject(selectableEdges.pop());
+    }
+    if (mergedSelectableObject) {
+        disposeObject(mergedSelectableObject);
+    }
     highlightBox.visible = false;
 	// currentIntersected.material.linewidth = 1;
 	// scene.remove(currentIntersected);
