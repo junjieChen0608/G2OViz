@@ -1,5 +1,7 @@
 /******************************************* client-side **************************************************/
 console.log('client running');
+console.log("inner width " + window.innerWidth
+            + "inner height " + window.innerHeight);
 
 var verticesFromBackend;
 const vertexBatchSize = 5000;
@@ -46,6 +48,7 @@ function countEdge(graphName) {
 		if (response.ok) {
 			console.log('count edges successful');
             queryGraphEdge(graphName, edgeBatchSize, 0);
+            return;
 		}
 		throw new Error('count edges failed');
 	})
@@ -198,6 +201,8 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
 var selectableEdges = [];
 var selectableEdgeGeometries = [];
 var mergedSelectableObject;
+var selectEdgesON = false;
+
 function getVertexNeighbors(graphName, vid) {
     console.log("query graph " + graphName
                 + "\nvid " + vid);
@@ -226,6 +231,9 @@ function getVertexNeighbors(graphName, vid) {
         for (var i = 0; i < edgesKeyView.length; ++i) {
             leadTo = edgesKeyView[i];
             drawSelectableEdge(fromPos, edges[leadTo]);
+        }
+        if (selectableEdges.length) {
+            selectEdgesON = true;
         }
 
         // merge and render all drawn green line segments
@@ -283,7 +291,8 @@ function drawSelectableEdge(fromPos, toPos) {
     selectableEdgeGeometries.push(selectableEdgeGeometry);
 
     // the actual LineSegments object to be selected
-    var selectableEdge = new THREE.LineSegments(selectableEdgeGeometry, selectableLineMaterial);
+    var selectableEdge = new THREE.LineSegments(selectableEdgeGeometry);
+    selectableEdge.material.color.setHex(colorSelectableEdge);
     selectableEdges.push(selectableEdge);
 }
 
@@ -334,6 +343,7 @@ var pickingData = [], pickingTexture, pickingScene;
 var highlightBox;
 var raycaster;
 var currentIntersected;
+var currentSelectedEdge;
 
 var pickingMaterial;
 var defaultMaterial;
@@ -349,6 +359,7 @@ var oweEdges = {};
 
 var mouse = new THREE.Vector2();
 var rayTracer = new THREE.Vector2();
+var linePicker = new THREE.Vector2();
 
 var color = new THREE.Color();
 const colorVertex = 0x135cd3;
@@ -428,22 +439,30 @@ function initInvariants() {
 
 	renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
     renderer.domElement.addEventListener('mouseup', onDocumentMouseClick);
+    window.addEventListener('resize', onWindowResize);
 	initControls();
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 function onDocumentMouseClick(event) {
     if (event.button === 0) {
+        console.log("x " + rayTracer.x  + " y " + rayTracer.y);
         highlight(totalVertexObjectDrawn);
     }
 }
 
 function onDocumentMouseMove(event) {
-	// event.preventDefault();
+	event.preventDefault();
 	rayTracer.x = ( event.offsetX / window.innerWidth) * 2 - 1;
 	rayTracer.y = - ( event.offsetY / window.innerHeight ) * 2 + 1;
 
-	mouse.x = event.offsetX;
-	mouse.y = event.offsetY;
+	mouse.x = event.clientX;
+	mouse.y = event.clientY;
 }
 
 // animate loop, render the scene
@@ -456,23 +475,58 @@ function animate() {
 function render() {
 	controls.update();
     // TODO need a switch to toggle raycaster to intersect selectableEdges
-
+    if (selectEdgesON) {
+        selectEdges();
+    }
     // highlight();
 	renderer.render( scene, camera );
 }
 
+// TODO bug intersect line is off
+function selectEdges() {
+    raycaster.setFromCamera(rayTracer, camera);
+    var intersects = raycaster.intersectObjects(selectableEdges);
+
+    // intersected
+    if (intersects.length > 0) {
+        if (currentSelectedEdge &&
+            intersects[0].object !== currentSelectedEdge) {
+            resetPrevSelectedEdge();
+        }
+        currentSelectedEdge = intersects[0].object;
+        highlightSelectedEdge();
+    } else {
+        // not intersected, need to reset prev intersected
+        if (currentSelectedEdge) {
+            resetPrevSelectedEdge();
+        }
+        currentSelectedEdge = undefined;
+    }
+}
+
+function highlightSelectedEdge() {
+    // console.log("hit edge");
+    currentSelectedEdge.material.linewidth = 5;
+    scene.add(currentSelectedEdge);
+}
+
+function resetPrevSelectedEdge() {
+    // console.log("reset edge");
+    currentSelectedEdge.material.linewidth = 1;
+    scene.remove(currentSelectedEdge);
+    currentSelectedEdge = undefined;
+}
+
 // TODO implement a switch to toggle between select mode and pan mode
 function highlight(objectsToIntersect) {
-
 	raycaster.setFromCamera(rayTracer, camera);
-
 	var intersects = raycaster.intersectObjects(objectsToIntersect);
 
 	// intersected
 	if ( intersects.length > 0 ) {
 		
 		// something is intersected previously, need to reset
-		if (currentIntersected !== undefined) {
+		if (currentIntersected) {
 			resetPrevIntersect();
 		}
 
@@ -486,7 +540,7 @@ function highlight(objectsToIntersect) {
 
 	} else {
 		// not intersected, need to reset state if something is intersected previously
-		if (currentIntersected !== undefined) {
+		if (currentIntersected) {
 			resetPrevIntersect();
 		}
 		currentIntersected = undefined;
@@ -508,9 +562,11 @@ function highlightIntersect() {
 function resetPrevIntersect() {
     console.log("reset hit");
     // need to dispose geometry and material to release memory
+    selectEdgesON = false;
     while (selectableEdges.length) {
         disposeObject(selectableEdges.pop());
     }
+
     if (mergedSelectableObject) {
         disposeObject(mergedSelectableObject);
     }
