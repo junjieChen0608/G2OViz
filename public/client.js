@@ -194,9 +194,8 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
     });
 }
 
-// TODO query given vertex's neighbors
-var selectableEdges = [];
-var selectableEdgeGeometries = [];
+// query given vertex's neighbors
+var neighborEdgeGeometries = [];
 var mergedSelectableObject;
 function getVertexNeighbors(graphName, vid) {
     console.log("query graph " + graphName
@@ -225,16 +224,16 @@ function getVertexNeighbors(graphName, vid) {
         var leadTo;
         for (var i = 0; i < edgesKeyView.length; ++i) {
             leadTo = edgesKeyView[i];
-            drawSelectableEdge(fromPos, edges[leadTo]);
+            drawNeighborEdge(fromPos, edges[leadTo]);
         }
 
         // merge and render all drawn green line segments
-        if (selectableEdgeGeometries.length) {
-            mergedSelectableObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(selectableEdgeGeometries),
+        if (neighborEdgeGeometries.length) {
+            mergedSelectableObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(neighborEdgeGeometries),
                                                                 selectableLineMaterial);
             scene.add(mergedSelectableObject);
         }
-        selectableEdgeGeometries = [];
+        neighborEdgeGeometries = [];
 
     })
     .catch(function(err) {
@@ -272,7 +271,7 @@ function drawEdge(fromPos, toPos) {
 }
 
 // draw selectable edges
-function drawSelectableEdge(fromPos, toPos) {
+function drawNeighborEdge(fromPos, toPos) {
     // console.log("draw selectable edge"
     //             + "\nfrom " + fromPos
     //             + "\nto " + toPos);
@@ -280,12 +279,10 @@ function drawSelectableEdge(fromPos, toPos) {
     var points = extractPoints(fromPos, toPos);
     var selectableEdgeGeometry = new THREE.BufferGeometry();
     selectableEdgeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-    selectableEdgeGeometries.push(selectableEdgeGeometry);
-
-    // the actual LineSegments object to be selected
-    var selectableEdge = new THREE.LineSegments(selectableEdgeGeometry, selectableLineMaterial);
-    selectableEdges.push(selectableEdge);
+    neighborEdgeGeometries.push(selectableEdgeGeometry);
 }
+
+// TODO implement draw selectable neighbor vertices
 
 // handle poses JSON
 function drawVertex(vid, ori, pos) {
@@ -455,7 +452,7 @@ function animate() {
 
 function render() {
 	controls.update();
-    // TODO need a switch to toggle raycaster to intersect selectableEdges
+    // TODO need a switch to toggle raycaster to selectable neighbor vertices
 
     // highlight();
 	renderer.render( scene, camera );
@@ -507,10 +504,8 @@ function highlightIntersect() {
 // reset previously highlighted element
 function resetPrevIntersect() {
     console.log("reset hit");
-    // need to dispose geometry and material to release memory
-    while (selectableEdges.length) {
-        disposeObject(selectableEdges.pop());
-    }
+    // TODO need to dispose geometry and material of selectable neighbor vertices to release memory
+
     if (mergedSelectableObject) {
         disposeObject(mergedSelectableObject);
     }

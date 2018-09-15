@@ -35,7 +35,7 @@ app.get('/countEdge/:graphName', (req, res) => {
 	var graphName = req.params.graphName;
 	console.log("graph to count edge: " + graphName);
 
-	// TODO simplify the count logic, just send status 200
+	// simplify the count logic, just send status 200
     res.sendStatus(200);
 
 	// var edgeCounter = 0;
