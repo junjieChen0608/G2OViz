@@ -199,6 +199,7 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
 var neighborEdgeGeometries = [];
 var mergedNeighborEdgeObject;
 var mergedNeighborVertexObject;
+var hoverNeighborON = false;
 function getVertexNeighbors(graphName, vid) {
     console.log("query graph " + graphName
                 + "\nvid " + vid);
@@ -246,6 +247,10 @@ function getVertexNeighbors(graphName, vid) {
             scene.add(mergedNeighborVertexObject);
         }
         neighborVertexGeometries = [];
+
+        if (neighborVertexObjects.length) {
+            hoverNeighborON = true;
+        }
     })
     .catch(function(err) {
         console.log(err);
@@ -487,9 +492,38 @@ function animate() {
 function render() {
 	controls.update();
     // TODO need a switch to toggle raycaster to selectable neighbor vertices
-
-    // highlight();
+    if (hoverNeighborON) {
+        highlightNeighborVertex();
+    }
 	renderer.render( scene, camera );
+}
+
+var intersectedNeighborVertex;
+function highlightNeighborVertex() {
+    raycaster.setFromCamera(rayTracer, camera);
+
+    var intersects = raycaster.intersectObjects(neighborVertexObjects);
+
+    if (intersects.length > 0) {
+        if (intersectedNeighborVertex !== undefined) {
+            resetIntersectedNeighborVertex();
+        }
+        intersectedNeighborVertex = intersects[0].object;
+        highlightIntersectedNeighborVertex();
+    } else {
+        if (intersectedNeighborVertex !== undefined) {
+            resetIntersectedNeighborVertex();
+        }
+        intersectedNeighborVertex = undefined;
+    }
+}
+
+function highlightIntersectedNeighborVertex() {
+    console.log("hit vid " + intersectedNeighborVertex.userData["vid"]);
+}
+
+function resetIntersectedNeighborVertex() {
+    console.log("reset hit vid " + intersectedNeighborVertex.userData["vid"]);
 }
 
 // TODO implement a switch to toggle between select mode and pan mode
@@ -538,14 +572,18 @@ function highlightIntersect() {
 // reset previously highlighted element
 function resetPrevIntersect() {
     console.log("reset hit");
-    // TODO need to dispose geometry and material of selectable neighbor vertices to release memory
-
+    // dispose geometry and material of selectable neighbor vertices to release memory
     if (mergedNeighborEdgeObject !== undefined) {
         disposeObject(mergedNeighborEdgeObject);
     }
 
     if (mergedNeighborVertexObject !== undefined) {
         disposeObject(mergedNeighborVertexObject);
+    }
+
+    hoverNeighborON = false;
+    while (neighborVertexObjects.length) {
+        disposeObject(neighborVertexObjects.pop());
     }
 
     highlightBox.visible = false;
