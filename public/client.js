@@ -387,9 +387,9 @@ var rayTracer = new THREE.Vector2();
 
 var color = new THREE.Color();
 const colorVertex = 0x135cd3;
-const colorNeighborVertex = 0xe06c00;
 const colorEdge = 0x7f0026;
-const colorSelectableEdge = 0x29bf1e;
+const colorNeighborVertex = 0x29bf1e;
+const colorNeighborEdge = 0x29bf1e;
 const colorOnSelect = 0xefdc04;
 
 const scale = new THREE.Vector3(0.7, 0.7, 0.7);
@@ -435,7 +435,7 @@ function initInvariants() {
                                                    vertexColors: THREE.VertexColors,
                                                    shininess: 0});
 	defaultEdgeMaterial = new THREE.LineBasicMaterial({color: colorEdge});
-    neighborEdgeMaterial = new THREE.LineBasicMaterial({color: colorSelectableEdge});
+    neighborEdgeMaterial = new THREE.LineBasicMaterial({color: colorNeighborEdge});
 
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xd8d8d8);
