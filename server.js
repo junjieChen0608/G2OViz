@@ -126,6 +126,7 @@ app.get('/queryGraphVertex/:graphName/:selectedPose/:vertexBatchSize/:iteration'
 			ori: [w, x, y, z],
 			pos: [x, y, z],
 			edges: [vid, ...]
+			fullInfo: vertex object
 		}
 		.
 		.
@@ -150,9 +151,7 @@ function parseVertex(vertex, selectedPose) {
 	var extractFull = {"ori": undefined,
 					   "pos": undefined,
 					   "edges": [],
-                       "fullInfo": vertex};
-
-	// console.log(JSON.stringify(extractFull["fullInfo"]));
+                       "fullInfo": undefined};
 
 	var vid = vertex.vid;
 	// console.log("parsing " + vid);
@@ -182,6 +181,9 @@ function parseVertex(vertex, selectedPose) {
     }
 	// console.log("vid " + vid
 	// 			+ "\nextractFull: " + JSON.stringify(verticesToRespond[vid]));
+    delete vertex["edges"];
+    extractFull["fullInfo"] = vertex;
+    // console.log(JSON.stringify(extractFull["fullInfo"]));
 }
 
 // extract ori, pos
