@@ -229,7 +229,8 @@ function getVertexNeighbors(graphName, vid) {
         for (var i = 0; i < edgesKeyView.length; ++i) {
             leadTo = edgesKeyView[i];
             drawNeighborEdge(fromPos, edges[leadTo]["pos"]);
-            drawNeighborVertex(leadTo, edges[leadTo]["ori"], edges[leadTo]["pos"]);
+            drawNeighborVertex(leadTo, edges[leadTo]["ori"], edges[leadTo]["pos"],
+                               edges[leadTo]["fullEdgeInfo"]);
         }
 
         // merge and render all drawn green line segments
@@ -302,7 +303,7 @@ function drawNeighborEdge(fromPos, toPos) {
 // draw selectable neighbor vertices
 var neighborVertexGeometries = [];
 var neighborVertexObjects = [];
-function drawNeighborVertex(leadTo, ori, pos) {
+function drawNeighborVertex(leadTo, ori, pos, fullEdgeInfo) {
     // console.log("draw neighbor " + leadTo
     //             + "\nori " + ori + "\npos " + pos);
 
@@ -321,7 +322,7 @@ function drawNeighborVertex(leadTo, ori, pos) {
     var neighborVertexObject = new THREE.Mesh(geometry, defaultVertexMaterial);
     neighborVertexObject.position.copy(position);
     neighborVertexObject.rotation.copy(rotation);
-    neighborVertexObject.userData = {"vid": leadTo};
+    neighborVertexObject.userData = {"fullEdgeInfo": fullEdgeInfo};
     neighborVertexObjects.push(neighborVertexObject);
 }
 
@@ -526,12 +527,13 @@ function highlightNeighborVertex() {
 }
 
 function highlightIntersectedNeighborVertex() {
-    console.log("hit vid " + intersectedNeighborVertex.userData["vid"]);
+    console.log("hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]
+                + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
     // TODO display more info of this edge
 }
 
 function resetIntersectedNeighborVertex() {
-    console.log("reset hit vid " + intersectedNeighborVertex.userData["vid"]);
+    console.log("reset hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]);
     // TODO hide the display window
 }
 

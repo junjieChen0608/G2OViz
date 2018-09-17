@@ -165,13 +165,13 @@ function parseVertex(vertex, selectedPose) {
 		}
 	}
 
-	if (poses) {
+	if (poses !== undefined) {
 		parsePoses(poses, selectedPose, extractFull);
 	}
 
 	// make sure ori and pos is not undefined
-    if (extractFull["ori"] && extractFull["pos"]) {
-        if (edges) {
+    if (extractFull["ori"] !== undefined && extractFull["pos"] !== undefined) {
+        if (edges !== undefined) {
             parseEdges(edges, extractFull);
         }
         verticesToRespond[vid] = extractFull;
@@ -257,7 +257,7 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
 
                 // check if this vertex's neighbor is also drawn
                 // as certain neighbors do not have selected pose
-                if (verticesDrawn[leadTo]) {
+                if (verticesDrawn[leadTo] !== undefined) {
                     var toPos = verticesDrawn[leadTo]["pos"];
                     edgesToRespond["edges"].push({"fromPos": fromPos, "toPos": toPos});
                 }
@@ -287,7 +287,7 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
                     .
                  }
     }
-  */
+*/
 
 // API for single vertex's neighbor query
 app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
@@ -307,14 +307,16 @@ app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
        var edges = {};
 
        var leadTo;
-       console.log(typeof graphName + "\n" + typeof vid);
        db.collection('vertices').findOne({graph_name: graphName, vid: parseInt(vid, 10)}, (err, result) => {
            if (err) {
                console.log(err);
            }
 
            var edgesFromDB = result["edges"];
-           // TODO iterate on all neighbors
+           if (edgesFromDB === undefined) {
+               edgesFromDB = [];
+           }
+
            for (var i = 0; i < edgesFromDB.length; ++i) {
                leadTo = edgesFromDB[i]["to"];
                if (verticesDrawn[leadTo] !== undefined) {
@@ -328,7 +330,7 @@ app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
            }
 
            response["edges"] = edges;
-           console.log("response object\n" + JSON.stringify(response));
+           // console.log("response object\n" + JSON.stringify(response));
            res.send(response);
        });
 
