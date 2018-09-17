@@ -299,11 +299,8 @@ app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
 
    if (verticesDrawn[vid]) {
        var response = {};
-       response["fromPos"] = {"ori": undefined,
-                              "pos": undefined};
-
-       response["fromPos"]["ori"] = verticesDrawn[vid]["ori"];
-       response["fromPos"]["pos"] = verticesDrawn[vid]["pos"];
+       response["fromPos"] = {"ori": verticesDrawn[vid]["ori"],
+                              "pos": verticesDrawn[vid]["pos"]};
        var edges = {};
 
        var leadTo;
@@ -320,12 +317,9 @@ app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
            for (var i = 0; i < edgesFromDB.length; ++i) {
                leadTo = edgesFromDB[i]["to"];
                if (verticesDrawn[leadTo] !== undefined) {
-                   edges[leadTo] = {"ori": undefined,
-                                    "pos": undefined,
+                   edges[leadTo] = {"ori": verticesDrawn[leadTo]["ori"],
+                                    "pos": verticesDrawn[leadTo]["pos"],
                                     "fullEdgeInfo": edgesFromDB[i]};
-
-                   edges[leadTo]["ori"] = verticesDrawn[leadTo]["ori"];
-                   edges[leadTo]["pos"] = verticesDrawn[leadTo]["pos"];
                }
            }
 
