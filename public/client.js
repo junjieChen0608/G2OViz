@@ -78,7 +78,6 @@ function countVertex(graphName, selectedPose) {
 		
 		// query the graph in a loop
 		if (totalVertex > 0) {
-		    // TODO reset renderer and stats
 			init();
 			animate();
 			queryGraphVertex(graphName, selectedPose, vertexBatchSize, 0);
@@ -115,7 +114,7 @@ function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
 
 		for (var vid in verticesFromBackend) {
 		    var curVertex = verticesFromBackend[vid];
-            drawVertex(vid, curVertex["ori"], curVertex["pos"]);
+            drawVertex(vid, curVertex["ori"], curVertex["pos"], curVertex["fullInfo"]);
         }
 
 		// merge all drawn vertex geometries to render a single mesh
@@ -327,7 +326,7 @@ function drawNeighborVertex(leadTo, ori, pos) {
 }
 
 // handle poses JSON
-function drawVertex(vid, ori, pos) {
+function drawVertex(vid, ori, pos, fullInfo) {
 
     var geometry = new THREE.ConeBufferGeometry(0.5, 1, 8, 1, false, 0, 6.3);
 
@@ -344,7 +343,7 @@ function drawVertex(vid, ori, pos) {
     var vertexObject = new THREE.Mesh(geometry, defaultVertexMaterial);
     vertexObject.position.copy(position);
     vertexObject.rotation.copy(rotation);
-    vertexObject.userData = {"vid": vid};
+    vertexObject.userData = {"fullInfo": fullInfo};
 
     totalVertexObjectDrawn.push(vertexObject);
 
@@ -555,8 +554,8 @@ function highlight(objectsToIntersect) {
 		highlightIntersect();
 
         // this click event triggers a query
-        if (currentIntersected.userData["vid"]) {
-            getVertexNeighbors(graphName, currentIntersected.userData["vid"]);
+        if (currentIntersected.userData["fullInfo"]["vid"]) {
+            getVertexNeighbors(graphName, currentIntersected.userData["fullInfo"]["vid"]);
         }
 
 	} else {
@@ -574,9 +573,7 @@ function highlightIntersect() {
     highlightBox.position.copy(currentIntersected.position);
     highlightBox.rotation.copy(currentIntersected.rotation);
     highlightBox.visible = true;
-
-	// currentIntersected.material.linewidth = 5;
-	// scene.add(currentIntersected);
+    console.log(JSON.stringify(currentIntersected.userData["fullInfo"], null, 2));
 }
 
 // reset previously highlighted element
@@ -597,8 +594,6 @@ function resetPrevIntersect() {
     }
 
     highlightBox.visible = false;
-	// currentIntersected.material.linewidth = 1;
-	// scene.remove(currentIntersected);
 }
 
 function applyVertexColors( geometry, color ) {

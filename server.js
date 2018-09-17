@@ -149,7 +149,10 @@ function parseVertex(vertex, selectedPose) {
 	// TODO expand this data structure to extract more info of a vertex
 	var extractFull = {"ori": undefined,
 					   "pos": undefined,
-					   "edges": []};
+					   "edges": [],
+                       "fullInfo": vertex};
+
+	// console.log(JSON.stringify(extractFull["fullInfo"]));
 
 	var vid = vertex.vid;
 	// console.log("parsing " + vid);
