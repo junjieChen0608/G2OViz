@@ -78,6 +78,7 @@ function countVertex(graphName, selectedPose) {
 		
 		// query the graph in a loop
 		if (totalVertex > 0) {
+		    // TODO reset renderer and stats
 			init();
 			animate();
 			queryGraphVertex(graphName, selectedPose, vertexBatchSize, 0);
@@ -299,12 +300,12 @@ function drawNeighborEdge(fromPos, toPos) {
     neighborEdgeGeometries.push(selectableEdgeGeometry);
 }
 
-// TODO implement draw selectable neighbor vertices
+// draw selectable neighbor vertices
 var neighborVertexGeometries = [];
 var neighborVertexObjects = [];
 function drawNeighborVertex(leadTo, ori, pos) {
-    console.log("draw neighbor " + leadTo
-                + "\nori " + ori + "\npos " + pos);
+    // console.log("draw neighbor " + leadTo
+    //             + "\nori " + ori + "\npos " + pos);
 
     var geometry = new THREE.ConeBufferGeometry(0.5, 1, 8, 1, false, 0, 6.3);
 
@@ -419,6 +420,22 @@ function initControls() {
 	controls.dynamicDampingFactor = 0.3;
 }
 
+function initRenderer() {
+    renderer = new THREE.WebGLRenderer({antialias: false});
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.domElement.setAttribute("id", "canvas");
+    renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
+    renderer.domElement.addEventListener('mouseup', onDocumentMouseClick);
+    container.appendChild(renderer.domElement);
+}
+
+function initStats() {
+    stats = new Stats();
+    stats.domElement.setAttribute("id", "stats");
+    container.appendChild(stats.domElement);
+}
+
 function initInvariants() {
 	container = document.getElementById( "container" );
 
@@ -441,7 +458,6 @@ function initInvariants() {
 	scene.background = new THREE.Color(0xd8d8d8);
 	scene.add(new THREE.AmbientLight(0x555555));
 
-	scene.add( new THREE.AmbientLight( 0x555555 ) );
 	light = new THREE.SpotLight(0xffffff, 1.5);
 	light.position.set(10000, 10000, 10000);
 	scene.add(light);
@@ -454,16 +470,8 @@ function initInvariants() {
 	raycaster = new THREE.Raycaster();
 	raycaster.linePrecision = 3;
 
-	renderer = new THREE.WebGLRenderer( { antialias: false } );
-	renderer.setPixelRatio( window.devicePixelRatio );
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	container.appendChild( renderer.domElement );
-
-	stats = new Stats();
-	container.appendChild( stats.dom );
-
-	renderer.domElement.addEventListener('mousemove', onDocumentMouseMove);
-    renderer.domElement.addEventListener('mouseup', onDocumentMouseClick);
+	initRenderer();
+	initStats();
 	initControls();
 }
 
@@ -491,7 +499,7 @@ function animate() {
 
 function render() {
 	controls.update();
-    // TODO need a switch to toggle raycaster to selectable neighbor vertices
+    // switch to toggle raycaster to selectable neighbor vertices
     if (hoverNeighborON) {
         highlightNeighborVertex();
     }
@@ -520,10 +528,12 @@ function highlightNeighborVertex() {
 
 function highlightIntersectedNeighborVertex() {
     console.log("hit vid " + intersectedNeighborVertex.userData["vid"]);
+    // TODO display more info of this edge
 }
 
 function resetIntersectedNeighborVertex() {
     console.log("reset hit vid " + intersectedNeighborVertex.userData["vid"]);
+    // TODO hide the display window
 }
 
 // TODO implement a switch to toggle between select mode and pan mode
