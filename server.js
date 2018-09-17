@@ -146,6 +146,7 @@ var verticesDrawnArrayView; // provide an indexed view of verticesDrawn
 function parseVertex(vertex, selectedPose) {
 	var edges;
 	var poses;
+	// TODO expand this data structure to extract more info of a vertex
 	var extractFull = {"ori": undefined,
 					   "pos": undefined,
 					   "edges": []};
@@ -270,9 +271,11 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
 /*
     response structure
     {
-        "fromPos": [x, y, z],
+        "fromPos": {ori: [w, x, y, z],
+                    pos: [x, y, z]}
         "edges": {
-                    vid: toPos,
+                    vid: {ori: [w, x, y, z],
+                          pos: [x, y, z]},
                     .
                     .
                     .
@@ -290,7 +293,11 @@ app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
 
    if (verticesDrawn[vid]) {
        var response = {};
-       response["fromPos"] = verticesDrawn[vid]["pos"];
+       response["fromPos"] = {"ori": undefined,
+                              "pos": undefined};
+
+       response["fromPos"]["ori"] = verticesDrawn[vid]["ori"];
+       response["fromPos"]["pos"] = verticesDrawn[vid]["pos"];
        var edges = {};
 
        var leadTo;
@@ -299,7 +306,10 @@ app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
 
            // check if this neighbor is drawn
            if (verticesDrawn[leadTo]) {
-               edges[leadTo] = verticesDrawn[leadTo]["pos"];
+               edges[leadTo] = {"ori": undefined,
+                                "pos": undefined};
+               edges[leadTo]["ori"] = verticesDrawn[leadTo]["ori"];
+               edges[leadTo]["pos"] = verticesDrawn[leadTo]["pos"];
            }
        }
        response["edges"] = edges;

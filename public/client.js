@@ -46,6 +46,7 @@ function countEdge(graphName) {
 		if (response.ok) {
 			console.log('count edges successful');
             queryGraphEdge(graphName, edgeBatchSize, 0);
+            return;
 		}
 		throw new Error('count edges failed');
 	})
@@ -213,7 +214,8 @@ function getVertexNeighbors(graphName, vid) {
 
         var neighborsFromBackend = JSON.parse(JSON.stringify(responseJSON));
         // console.log(neighborsFromBackend);
-        var fromPos = neighborsFromBackend["fromPos"];
+        var fromPos = neighborsFromBackend["fromPos"]["pos"];
+        console.log("fromPos ori " + neighborsFromBackend["fromPos"]["ori"]);
         var edges = neighborsFromBackend["edges"];
         var edgesKeyView = Object.keys(edges);
 
@@ -224,7 +226,8 @@ function getVertexNeighbors(graphName, vid) {
         var leadTo;
         for (var i = 0; i < edgesKeyView.length; ++i) {
             leadTo = edgesKeyView[i];
-            drawNeighborEdge(fromPos, edges[leadTo]);
+            console.log(leadTo + " ori " + edges[leadTo]["ori"]);
+            drawNeighborEdge(fromPos, edges[leadTo]["pos"]);
         }
 
         // merge and render all drawn green line segments
@@ -270,7 +273,7 @@ function drawEdge(fromPos, toPos) {
 	edgeGeometriesDrawn.push(edgeGeometry);
 }
 
-// draw selectable edges
+// draw neighbor edges
 function drawNeighborEdge(fromPos, toPos) {
     // console.log("draw selectable edge"
     //             + "\nfrom " + fromPos
