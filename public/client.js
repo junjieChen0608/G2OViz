@@ -120,7 +120,7 @@ function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
 		// merge all drawn vertex geometries to render a single mesh
 		if (vertexGeometriesDrawn.length) {
 			var mergedVertexObjects = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(vertexGeometriesDrawn),
-                                                     defaultMaterial);
+                                                     defaultVertexMaterial);
 			scene.add(mergedVertexObjects);
 		}
 		vertexGeometriesDrawn = [];
@@ -175,7 +175,7 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
         // merge all drawn edge geometries to render a single line segment
         if (edgeGeometriesDrawn.length) {
         	var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn),
-                                                          lineMaterial);
+                                                          defaultEdgeMaterial);
         	scene.add(mergedEdgeObject);
         }
         edgeGeometriesDrawn = [];
@@ -197,7 +197,8 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
 
 // query given vertex's neighbors
 var neighborEdgeGeometries = [];
-var mergedSelectableObject;
+var mergedNeighborEdgeObject;
+var mergedNeighborVertexObject;
 function getVertexNeighbors(graphName, vid) {
     console.log("query graph " + graphName
                 + "\nvid " + vid);
@@ -226,18 +227,25 @@ function getVertexNeighbors(graphName, vid) {
         var leadTo;
         for (var i = 0; i < edgesKeyView.length; ++i) {
             leadTo = edgesKeyView[i];
-            console.log(leadTo + " ori " + edges[leadTo]["ori"]);
             drawNeighborEdge(fromPos, edges[leadTo]["pos"]);
+            drawNeighborVertex(leadTo, edges[leadTo]["ori"], edges[leadTo]["pos"]);
         }
 
         // merge and render all drawn green line segments
         if (neighborEdgeGeometries.length) {
-            mergedSelectableObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(neighborEdgeGeometries),
-                                                                selectableLineMaterial);
-            scene.add(mergedSelectableObject);
+            mergedNeighborEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(neighborEdgeGeometries),
+                                                              neighborEdgeMaterial);
+            scene.add(mergedNeighborEdgeObject);
         }
         neighborEdgeGeometries = [];
 
+        // merge and render all drawn neighbor vertices
+        if (neighborVertexGeometries.length) {
+            mergedNeighborVertexObject = new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(neighborVertexGeometries),
+                                                        defaultVertexMaterial);
+            scene.add(mergedNeighborVertexObject);
+        }
+        neighborVertexGeometries = [];
     })
     .catch(function(err) {
         console.log(err);
@@ -249,6 +257,7 @@ function disposeObject(obj) {
     obj.geometry.dispose();
     obj.material.dispose();
     scene.remove(obj);
+    obj = undefined;
 }
 
 // replace slash to %2F in the query url
@@ -286,12 +295,33 @@ function drawNeighborEdge(fromPos, toPos) {
 }
 
 // TODO implement draw selectable neighbor vertices
+var neighborVertexGeometries = [];
+var neighborVertexObjects = [];
+function drawNeighborVertex(leadTo, ori, pos) {
+    console.log("draw neighbor " + leadTo
+                + "\nori " + ori + "\npos " + pos);
+
+    var geometry = new THREE.ConeBufferGeometry(0.5, 1, 8, 1, false, 0, 6.3);
+
+    var matrix = new THREE.Matrix4();
+    var position = new THREE.Vector3(pos[0], pos[1], pos[2]);
+    var quaternion = new THREE.Quaternion(ori[1], ori[2], ori[3], ori[0]);
+    var rotation = new THREE.Euler().setFromQuaternion(quaternion);
+
+    matrix.compose(position, quaternion, scale);
+    geometry.applyMatrix(matrix);
+    applyVertexColors(geometry, color.setHex(colorNeighborVertex));
+    neighborVertexGeometries.push(geometry);
+    // the actual object to be intersected with
+    var neighborVertexObject = new THREE.Mesh(geometry, defaultVertexMaterial);
+    neighborVertexObject.position.copy(position);
+    neighborVertexObject.rotation.copy(rotation);
+    neighborVertexObject.userData = {"vid": leadTo};
+    neighborVertexObjects.push(neighborVertexObject);
+}
 
 // handle poses JSON
 function drawVertex(vid, ori, pos) {
-    // console.log("vid " + vid
-    //             + "\nori: " + ori[0]
-    //             + "\npos: " + pos[0]);
 
     var geometry = new THREE.ConeBufferGeometry(0.5, 1, 8, 1, false, 0, 6.3);
 
@@ -305,7 +335,7 @@ function drawVertex(vid, ori, pos) {
     // give the geometry's vertices color
     applyVertexColors(geometry, color.setHex(colorVertex));
     vertexGeometriesDrawn.push(geometry);
-    var vertexObject = new THREE.Mesh(geometry, defaultMaterial);
+    var vertexObject = new THREE.Mesh(geometry, defaultVertexMaterial);
     vertexObject.position.copy(position);
     vertexObject.rotation.copy(rotation);
     vertexObject.userData = {"vid": vid};
@@ -336,9 +366,9 @@ var raycaster;
 var currentIntersected;
 
 var pickingMaterial;
-var defaultMaterial;
-var lineMaterial;
-var selectableLineMaterial;
+var defaultVertexMaterial;
+var defaultEdgeMaterial;
+var neighborEdgeMaterial;
 
 var vertexGeometriesDrawn = [];
 var vertexGeometriesPicking = [];
@@ -352,6 +382,7 @@ var rayTracer = new THREE.Vector2();
 
 var color = new THREE.Color();
 const colorVertex = 0x135cd3;
+const colorNeighborVertex = 0xe06c00;
 const colorEdge = 0x7f0026;
 const colorSelectableEdge = 0x29bf1e;
 const colorOnSelect = 0xefdc04;
@@ -394,12 +425,12 @@ function initInvariants() {
 	pickingTexture.texture.minFilter = THREE.LinearFilter;
 
 	pickingMaterial = new THREE.MeshBasicMaterial({vertexColors: THREE.VertexColors});
-	defaultMaterial = new THREE.MeshPhongMaterial({color: 0xffffff,
+	defaultVertexMaterial = new THREE.MeshPhongMaterial({color: 0xffffff,
                                                    flatShading: true,
                                                    vertexColors: THREE.VertexColors,
                                                    shininess: 0});
-	lineMaterial = new THREE.LineBasicMaterial({color: colorEdge});
-    selectableLineMaterial = new THREE.LineBasicMaterial({color: colorSelectableEdge});
+	defaultEdgeMaterial = new THREE.LineBasicMaterial({color: colorEdge});
+    neighborEdgeMaterial = new THREE.LineBasicMaterial({color: colorSelectableEdge});
 
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xd8d8d8);
@@ -509,9 +540,14 @@ function resetPrevIntersect() {
     console.log("reset hit");
     // TODO need to dispose geometry and material of selectable neighbor vertices to release memory
 
-    if (mergedSelectableObject) {
-        disposeObject(mergedSelectableObject);
+    if (mergedNeighborEdgeObject !== undefined) {
+        disposeObject(mergedNeighborEdgeObject);
     }
+
+    if (mergedNeighborVertexObject !== undefined) {
+        disposeObject(mergedNeighborVertexObject);
+    }
+
     highlightBox.visible = false;
 	// currentIntersected.material.linewidth = 1;
 	// scene.remove(currentIntersected);
