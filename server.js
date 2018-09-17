@@ -280,7 +280,8 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
                     pos: [x, y, z]}
         "edges": {
                     vid: {ori: [w, x, y, z],
-                          pos: [x, y, z]},
+                          pos: [x, y, z],
+                          fullEdgeInfo: edge object},
                     .
                     .
                     .
@@ -306,20 +307,31 @@ app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
        var edges = {};
 
        var leadTo;
-       for (var i = 0; i < verticesDrawn[vid]["edges"].length; ++i) {
-           leadTo = verticesDrawn[vid]["edges"][i];
-
-           // check if this neighbor is drawn
-           if (verticesDrawn[leadTo]) {
-               edges[leadTo] = {"ori": undefined,
-                                "pos": undefined};
-               edges[leadTo]["ori"] = verticesDrawn[leadTo]["ori"];
-               edges[leadTo]["pos"] = verticesDrawn[leadTo]["pos"];
+       console.log(typeof graphName + "\n" + typeof vid);
+       db.collection('vertices').findOne({graph_name: graphName, vid: parseInt(vid, 10)}, (err, result) => {
+           if (err) {
+               console.log(err);
            }
-       }
-       response["edges"] = edges;
-       console.log("response object\n" + JSON.stringify(response));
-       res.send(response);
+
+           var edgesFromDB = result["edges"];
+           // TODO iterate on all neighbors
+           for (var i = 0; i < edgesFromDB.length; ++i) {
+               leadTo = edgesFromDB[i]["to"];
+               if (verticesDrawn[leadTo] !== undefined) {
+                   edges[leadTo] = {"ori": undefined,
+                                    "pos": undefined,
+                                    "fullEdgeInfo": edgesFromDB[i]};
+
+                   edges[leadTo]["ori"] = verticesDrawn[leadTo]["ori"];
+                   edges[leadTo]["pos"] = verticesDrawn[leadTo]["pos"];
+               }
+           }
+
+           response["edges"] = edges;
+           console.log("response object\n" + JSON.stringify(response));
+           res.send(response);
+       });
+
    } else {
        console.log(vid + " is NOT drawn");
        res.sendStatus(404);
