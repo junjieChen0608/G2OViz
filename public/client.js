@@ -6,10 +6,13 @@ const vertexBatchSize = 5000;
 const edgeBatchSize = 20000;
 var totalIteration = 0;
 var totalVertex = 0;
-var totalEdgeDrawn = 0;
+var totalEdgeDrawnCounter = 0;
 var graphName = "";
 
+var totalVertexObjectDrawn = [];
+
 const button = document.getElementById('render');
+
 button.addEventListener('click', function(event) {
 	counter = 0;
 	console.log('button clicked');
@@ -37,7 +40,8 @@ input.addEventListener('keyup', function(event) {
 	}
 });
 
-// count total number of edges in given graph
+// this API is simplified to merely take over control flow
+// after all vertices are drawn
 function countEdge(graphName) {
 	console.log('count edges in graph ' + graphName);
 
@@ -59,7 +63,7 @@ function countEdge(graphName) {
 // query the given graph to count total vertices
 function countVertex(graphName, selectedPose) {
 	console.log('count graph ' + graphName);
-    totalEdgeDrawn = 0;
+    totalEdgeDrawnCounter = 0;
 	fetch('/countVertex/' + graphName, {method: 'GET'})
 	.then(function(response) {
 		if (response.ok) {
@@ -91,7 +95,6 @@ function countVertex(graphName, selectedPose) {
 	});
 }
 
-var totalVertexObjectDrawn = [];
 // query given graph, response is a batch size of vertices
 function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
 	fetch('/queryGraphVertex/'
@@ -161,7 +164,7 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
         var backEndEdgeCount = edgesFromBackend["edgeCount"];
         // console.log("backend index: " + backEndIndex
         //             + "\nbackend edge count " + backEndEdgeCount);
-        totalEdgeDrawn += backEndEdgeCount;
+        totalEdgeDrawnCounter += backEndEdgeCount;
         // var head = edgesFromBackend["edges"][0]["fromPos"];
         // console.log(head[0]);
 
@@ -185,7 +188,7 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
             queryGraphEdge(graphName, edgeBatchSize, ++backEndIndex);
         } else {
             console.log("draw edges from back-end DONE"
-                        + "\ntotal " + totalEdgeDrawn + " edges drawn");
+                        + "\ntotal " + totalEdgeDrawnCounter + " edges drawn");
             console.log("\n****************************************\n");
         }
 
@@ -328,7 +331,7 @@ function drawNeighborVertexGeometry(leadTo, ori, pos, fullEdgeInfo) {
     neighborVertexObjects.push(neighborVertexObject);
 }
 
-// handle poses JSON
+// draw given vertex to the canvas with fullInfo object attached to it
 function drawVertexGeometry(vid, ori, pos, fullInfo) {
 
     var geometry = new THREE.ConeBufferGeometry(0.5, 1, 8, 1, false, 0, 6.3);
@@ -373,6 +376,8 @@ var highlightBox, transformBox;
 var transformLine;
 var raycaster;
 var currentIntersected;
+var intersectedNeighborVertex;
+var transformEdgeDrawn = false;
 
 var pickingMaterial;
 var defaultVertexMaterial;
@@ -508,7 +513,7 @@ function onWindowResize() {
 
 // animate loop, render the scene
 function animate() {
-	requestAnimationFrame( animate );
+	requestAnimationFrame(animate);
 	render();
 	stats.update();
 }
@@ -519,10 +524,10 @@ function render() {
     if (hoverNeighborON) {
         highlightNeighborVertex();
     }
-	renderer.render( scene, camera );
+	renderer.render(scene, camera);
 }
 
-var intersectedNeighborVertex;
+// highlight neighbor vertices on mouse over
 function highlightNeighborVertex() {
     raycaster.setFromCamera(rayTracer, camera);
 
@@ -542,6 +547,9 @@ function highlightNeighborVertex() {
     }
 }
 
+// subroutine of neighbor vertices highlighting
+// it displays info of selected edge
+// and draws transformBox and transformLine to visualize edge transform info
 function highlightIntersectedNeighborVertex() {
     // console.log("hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]
     //             + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
@@ -577,11 +585,12 @@ function highlightIntersectedNeighborVertex() {
     }
 }
 
-var transformEdgeDrawn = false;
+// captures mouse out action on hovered edge, does not do much
 function resetIntersectedNeighborVertex() {
     console.log("reset hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]);
 }
 
+// hide previously shown transformBox and transformLine
 function resetTransformBoxAndLine() {
     transformEdgeDrawn = false;
     if (transformLine !== undefined &&
@@ -593,6 +602,7 @@ function resetTransformBoxAndLine() {
     }
 }
 
+// draw an edge between the hovered neighbor vertex and transformed originating vertex
 function drawTransformEdge(fromPos, toPos) {
     var points = extractPoints(fromPos, toPos);
     var edgeGeometry = new THREE.BufferGeometry();
@@ -603,16 +613,22 @@ function drawTransformEdge(fromPos, toPos) {
     transformEdgeDrawn = true;
 }
 
-// TODO implement a switch to toggle between select mode and pan mode
-function highlight(objectsToIntersect) {
+// apply transformation to each field of given dataz
+function applyTransform(original, transform, size) {
+    for (var i = 0; i < size; ++i) {
+        original[i] += transform[i];
+    }
+}
 
+// TODO implement a switch to toggle between select mode and pan mode
+// highlight vertex on mouse click
+function highlight(objectsToIntersect) {
 	raycaster.setFromCamera(rayTracer, camera);
 
 	var intersects = raycaster.intersectObjects(objectsToIntersect);
 
 	// intersected
 	if ( intersects.length > 0 ) {
-		
 		// something is intersected previously, need to reset
 		if (currentIntersected !== undefined) {
 			resetPrevIntersect();
@@ -635,13 +651,7 @@ function highlight(objectsToIntersect) {
 	}
 }
 
-function applyTransform(original, transform, size) {
-    for (var i = 0; i < size; ++i) {
-        original[i] += transform[i];
-    }
-}
-
-// highlight intersected element
+// highlight chosen vertex
 function highlightIntersect() {
     console.log("hit vertex");
     highlightBox.position.copy(currentIntersected.position);
@@ -655,7 +665,13 @@ function highlightIntersect() {
 function resetPrevIntersect() {
     console.log("reset hit");
     // TODO hide the display info somehow
+    highlightBox.visible = false;
 
+    cleanUpAfterDeselect();
+}
+
+// clean-up procedure for deselecting vertex
+function cleanUpAfterDeselect() {
     // dispose geometry and material of selectable neighbor vertices to release memory
     if (mergedNeighborEdgeObject !== undefined) {
         disposeObject(mergedNeighborEdgeObject);
@@ -670,25 +686,24 @@ function resetPrevIntersect() {
         disposeObject(neighborVertexObjects.pop());
     }
 
-    highlightBox.visible = false;
     // reset transformLine and transformBox when user deselect the vertex
     resetTransformBoxAndLine();
     // TODO hide displayed info of hovered neighbor edge
 }
 
+// paint the vertex with given color
 function applyVertexColors( geometry, color ) {
-
 	var position = geometry.attributes.position;
 	var colors = [];
 
-	for ( var i = 0; i < position.count; i ++ ) {
-		colors.push( color.r, color.g, color.b );
+	for (var i = 0; i < position.count; i++) {
+		colors.push(color.r, color.g, color.b);
 	}
 
 	geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
-
 }
 
+// DEPRECATED
 function pick() {
 	//render the picking scene off-screen
 	renderer.render( pickingScene, camera, pickingTexture );
