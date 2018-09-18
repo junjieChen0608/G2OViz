@@ -548,19 +548,30 @@ function highlightIntersectedNeighborVertex() {
     // TODO display more info of this edge
 
     // TODO visualize edge transformation to selected edge
-    console.log("intersected neighbor vertex pos\n" + JSON.stringify(intersectedNeighborVertex.position["x"])
-                + "\nori\n" + JSON.stringify(intersectedNeighborVertex.rotation));
 
-    console.log("transformation pos\n" + intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["pos"]
-                + "\nori\n" + intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["ori"]);
-
-    if (!transformEdgeDrawn) {
-        drawTransformEdge([intersectedNeighborVertex.position["x"],
-                           intersectedNeighborVertex.position["y"],
-                           intersectedNeighborVertex.position["z"]],
-                           intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["pos"]);
+    var intersectPos = currentIntersected.position.toArray();
+    var intersectOri = currentIntersected.quaternion.toArray();
+    if (intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"] !== undefined) {
+        var transPos = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["pos"];
+        var transOri = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["ori"];
+        console.log("before\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri
+                    + "\ntransPos\n" + transPos + "\ntransOri\n" + transOri);
+        applyTransform(intersectPos, transPos, intersectPos.length);
+        applyTransform(intersectOri, transOri, intersectOri.length);
+        console.log("after\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri);
+        if (!transformEdgeDrawn) {
+            drawTransformEdge(intersectedNeighborVertex.position.toArray(), intersectPos);
+            // TODO need to draw a transformBox here
+            var position = new THREE.Vector3();
+            position.fromArray(intersectPos);
+            var quaternion = new THREE.Quaternion();
+            quaternion.fromArray(intersectOri);
+            var rotation = new THREE.Euler().setFromQuaternion(quaternion);
+            transformBox.position.copy(position);
+            transformBox.rotation.copy(rotation);
+            transformBox.visible = true;
+        }
     }
-
 }
 
 var transformEdgeDrawn = false;
@@ -572,6 +583,7 @@ function resetIntersectedNeighborVertex() {
     transformEdgeDrawn = false;
     if (transformLine !== undefined) {
         transformLine.visible = false;
+        transformBox.visible = false;
         disposeObject(transformLine);
     }
 }
@@ -616,6 +628,12 @@ function highlight(objectsToIntersect) {
 		}
 		currentIntersected = undefined;
 	}
+}
+
+function applyTransform(original, transform, size) {
+    for (var i = 0; i < size; ++i) {
+        original[i] += transform[i];
+    }
 }
 
 // highlight intersected element
