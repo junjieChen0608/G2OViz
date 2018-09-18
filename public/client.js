@@ -260,10 +260,12 @@ function getVertexNeighbors(graphName, vid) {
 
 // dispose given object and remove it from scene
 function disposeObject(obj) {
-    obj.geometry.dispose();
-    obj.material.dispose();
-    scene.remove(obj);
-    obj = undefined;
+    if (obj !== undefined) {
+        obj.geometry.dispose();
+        obj.material.dispose();
+        scene.remove(obj);
+        obj = undefined;
+    }
 }
 
 // replace slash to %2F in the query url
@@ -368,6 +370,7 @@ var container, stats;
 var camera, controls, scene, renderer, light;
 var pickingData = [], pickingTexture, pickingScene;
 var highlightBox, transformBox;
+var transformLine;
 var raycaster;
 var currentIntersected;
 
@@ -469,9 +472,10 @@ function initInvariants() {
 
 	transformBox = new THREE.Mesh(new THREE.ConeBufferGeometry(0.6, 1.1, 8, 1, false, 0, 6.3),
                                   new THREE.MeshLambertMaterial({color: colorOnSelect}));
+
 	transformBox.scale.copy(scale);
 	scene.add(transformBox);
-	
+
 	raycaster = new THREE.Raycaster();
 	raycaster.linePrecision = 3;
 
@@ -539,18 +543,47 @@ function highlightNeighborVertex() {
 }
 
 function highlightIntersectedNeighborVertex() {
-    console.log("hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]
-                + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
+    // console.log("hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]
+    //             + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
     // TODO display more info of this edge
 
     // TODO visualize edge transformation to selected edge
+    console.log("intersected neighbor vertex pos\n" + JSON.stringify(intersectedNeighborVertex.position["x"])
+                + "\nori\n" + JSON.stringify(intersectedNeighborVertex.rotation));
+
+    console.log("transformation pos\n" + intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["pos"]
+                + "\nori\n" + intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["ori"]);
+
+    if (!transformEdgeDrawn) {
+        drawTransformEdge([intersectedNeighborVertex.position["x"],
+                           intersectedNeighborVertex.position["y"],
+                           intersectedNeighborVertex.position["z"]],
+                           intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["pos"]);
+    }
+
 }
 
+var transformEdgeDrawn = false;
 function resetIntersectedNeighborVertex() {
     console.log("reset hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]);
     // TODO hide the display window
 
     // TODO hide the visualized edge transformation
+    transformEdgeDrawn = false;
+    if (transformLine !== undefined) {
+        transformLine.visible = false;
+        disposeObject(transformLine);
+    }
+}
+
+function drawTransformEdge(fromPos, toPos) {
+    var points = extractPoints(fromPos, toPos);
+    var edgeGeometry = new THREE.BufferGeometry();
+    edgeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+    transformLine = new THREE.LineSegments(edgeGeometry, neighborEdgeMaterial);
+    transformLine.visible = true;
+    scene.add(transformLine);
+    transformEdgeDrawn = true;
 }
 
 // TODO implement a switch to toggle between select mode and pan mode
