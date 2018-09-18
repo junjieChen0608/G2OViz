@@ -11,6 +11,7 @@ app.use(express.static(__dirname + '/build'));
 let db;
 const url = 'mongodb://localhost:27017/';
 
+// connect to db "hdmap" and listen to 8080
 MongoClient.connect(url,
 					{useNewUrlParser: true}, (err, database) => {
 	if (err) {
@@ -30,7 +31,8 @@ app.get('/', (req, res) => {
 	res.sendFile(__dirname + '/index.html');
 });
 
-// count total edge
+// this API is simplified to merely take over control logic
+// after all vertices are drawn
 app.get('/countEdge/:graphName', (req, res) => {
 	var graphName = req.params.graphName;
 	console.log("graph to count edge: " + graphName);
@@ -102,7 +104,6 @@ app.get('/queryGraphVertex/:graphName/:selectedPose/:vertexBatchSize/:iteration'
 		  	if (err) {
 		  		console.log(err);
 		  	} else {
-		  		// second pass: check if there is any vertex not drawn
 		  		console.log("this batch of vertex parsed in back-end\n"
 		  					+ "verticesToRespond size " + Object.keys(verticesToRespond).length
 		  					+ "\nverticesDrawn size " + Object.keys(verticesDrawn).length);
@@ -126,7 +127,7 @@ app.get('/queryGraphVertex/:graphName/:selectedPose/:vertexBatchSize/:iteration'
 			ori: [w, x, y, z],
 			pos: [x, y, z],
 			edges: [vid, ...]
-			fullInfo: vertex object
+			fullInfo: vertex object w/o edges
 		}
 		.
 		.
@@ -134,14 +135,14 @@ app.get('/queryGraphVertex/:graphName/:selectedPose/:vertexBatchSize/:iteration'
 	}
 
 */
-var verticesToRespond; // record response for each batch query, reset in queryGraphVertex
-var verticesDrawn; // record all vertices in this graph, reset in countVertex
-var verticesDrawnArrayView; // provide an indexed view of verticesDrawn
+// record response for each batch query, reset in queryGraphVertex, passed to front-end
+var verticesToRespond;
 
-/*
-1, first pass, parse each vertex that belongs to this batch, compose key-val pair in its full format(i.e. w/ edges)
-	in the verticesDrawn map, also put in verticesToRespond map
-*/
+// record all vertices in this graph, reset in countVertex, stored in back-end
+var verticesDrawn;
+
+// provide an indexed view of verticesDrawn
+var verticesDrawnArrayView;
 
 // parse each vertex, in particular, extract its ori, pos, edges, and full vertex info w/o edges
 function parseVertex(vertex, selectedPose) {
@@ -186,7 +187,7 @@ function parseVertex(vertex, selectedPose) {
     // console.log(JSON.stringify(extractFull["fullInfo"]));
 }
 
-// extract ori, pos
+// extract ori and pos of given pose
 function parsePoses(poses, selectedPose, extractFull) {
 	var  ori, pos;
 
@@ -216,15 +217,18 @@ function parseEdges(edges, extractFull) {
         index: number,
         edgeCount: number,
         edges: [
-                    {posFrom, posTo},
+                    {fromPos: [x, y, z],
+                     toPos: [x, y, z]},
                     .
                     .
                     .
                ]
     }
 
- */
-var edgesToRespond; // record response for each batch edge query, reset in queryGraphEdge
+*/
+
+// record response for each batch edge query, reset in queryGraphEdge
+var edgesToRespond;
 
 // query given graph's edges batch by batch
 app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
@@ -242,7 +246,6 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
     var index = req.params.index;
 
     // jump to the right index to collect edges
-
     for (index; index < verticesDrawnArrayView.length; ++index) {
         if (edgesToRespond["edges"].length < edgeBatchSize) {
             var vid = verticesDrawnArrayView[index];
