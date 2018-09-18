@@ -261,16 +261,6 @@ function getVertexNeighbors(graphName, vid) {
     });
 }
 
-// dispose given object and remove it from scene
-function disposeObject(obj) {
-    if (obj !== undefined) {
-        obj.geometry.dispose();
-        obj.material.dispose();
-        scene.remove(obj);
-        obj = undefined;
-    }
-}
-
 // replace slash to %2F in the query url
 function replaceSlash(input) {
 	console.log("replacing slash for " + input);
@@ -378,6 +368,7 @@ var raycaster;
 var currentIntersected;
 var intersectedNeighborVertex;
 var transformEdgeDrawn = false;
+var panMode = true;
 
 var pickingMaterial;
 var defaultVertexMaterial;
@@ -387,9 +378,6 @@ var neighborEdgeMaterial;
 var vertexGeometriesDrawn = [];
 var vertexGeometriesPicking = [];
 var edgeGeometriesDrawn = [];
-
-var verticesDrawn = {};
-var oweEdges = {};
 
 var mouse = new THREE.Vector2();
 var rayTracer = new THREE.Vector2();
@@ -414,6 +402,7 @@ function init() {
 	vertexGeometriesPicking = [];
 	pickingData = [];
 	edgeGeometriesDrawn = [];
+	document.getElementById("mode").style.visibility = "visible";
 	initInvariants();
 }
 
@@ -446,7 +435,6 @@ function initStats() {
 
 function initInvariants() {
 	container = document.getElementById( "container" );
-
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
 	camera.position.z = 2000;
 
@@ -488,10 +476,11 @@ function initInvariants() {
 	initStats();
 	initControls();
     window.addEventListener('resize', onWindowResize);
+    document.body.addEventListener('keydown', onDocumentKeyClick);
 }
 
 function onDocumentMouseClick(event) {
-    if (event.button === 0) {
+    if (event.button === 0 && !panMode) {
         highlight(totalVertexObjectDrawn);
     }
 }
@@ -509,6 +498,14 @@ function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function onDocumentKeyClick(event) {
+    if (event.key === "x" ||
+        event.key === "X") {
+        panMode = !panMode;
+        document.getElementById("mode").innerHTML = "mode: " + ((panMode) ? "pan" : "select");
+    }
 }
 
 // animate loop, render the scene
@@ -611,6 +608,16 @@ function drawTransformEdge(fromPos, toPos) {
     transformLine.visible = true;
     scene.add(transformLine);
     transformEdgeDrawn = true;
+}
+
+// dispose given object and remove it from scene
+function disposeObject(obj) {
+    if (obj !== undefined) {
+        obj.geometry.dispose();
+        obj.material.dispose();
+        scene.remove(obj);
+        obj = undefined;
+    }
 }
 
 // apply transformation to each field of given dataz
