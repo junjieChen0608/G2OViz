@@ -143,11 +143,11 @@ var verticesDrawnArrayView; // provide an indexed view of verticesDrawn
 	in the verticesDrawn map, also put in verticesToRespond map
 */
 
-// parse each vertex, in particular, extract its ori, pos, and edges
+// parse each vertex, in particular, extract its ori, pos, edges, and full vertex info w/o edges
 function parseVertex(vertex, selectedPose) {
 	var edges;
 	var poses;
-	// TODO expand this data structure to extract more info of a vertex
+	// expand this data structure to extract more info of a vertex
 	var extractFull = {"ori": undefined,
 					   "pos": undefined,
 					   "edges": [],

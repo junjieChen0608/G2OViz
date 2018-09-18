@@ -473,6 +473,7 @@ function initInvariants() {
 	initRenderer();
 	initStats();
 	initControls();
+    window.addEventListener('resize', onWindowResize);
 }
 
 function onDocumentMouseClick(event) {
@@ -488,6 +489,12 @@ function onDocumentMouseMove(event) {
 
 	mouse.x = event.offsetX;
 	mouse.y = event.offsetY;
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 // animate loop, render the scene
@@ -576,11 +583,14 @@ function highlightIntersect() {
     highlightBox.rotation.copy(currentIntersected.rotation);
     highlightBox.visible = true;
     console.log(JSON.stringify(currentIntersected.userData["fullInfo"], null, 2));
+    // TODO display selected vertex info somehow
 }
 
 // reset previously highlighted element
 function resetPrevIntersect() {
     console.log("reset hit");
+    // TODO hide the display info somehow
+
     // dispose geometry and material of selectable neighbor vertices to release memory
     if (mergedNeighborEdgeObject !== undefined) {
         disposeObject(mergedNeighborEdgeObject);
