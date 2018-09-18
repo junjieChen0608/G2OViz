@@ -545,9 +545,9 @@ function highlightNeighborVertex() {
 function highlightIntersectedNeighborVertex() {
     // console.log("hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]
     //             + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
-    // TODO display more info of this edge
+    // TODO display info of this edge
 
-    // TODO visualize edge transformation to selected edge
+    // visualize edge transformation of selected edge
 
     var intersectPos = currentIntersected.position.toArray();
     var intersectOri = currentIntersected.quaternion.toArray();
@@ -559,9 +559,12 @@ function highlightIntersectedNeighborVertex() {
         applyTransform(intersectPos, transPos, intersectPos.length);
         applyTransform(intersectOri, transOri, intersectOri.length);
         console.log("after\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri);
+
+        // reset previously drawn transfromLine and transformBox here
+        // this ensures user to pan the view while retaining neighbor edge data
+        resetTransformBoxAndLine();
         if (!transformEdgeDrawn) {
             drawTransformEdge(intersectedNeighborVertex.position.toArray(), intersectPos);
-            // TODO need to draw a transformBox here
             var position = new THREE.Vector3();
             position.fromArray(intersectPos);
             var quaternion = new THREE.Quaternion();
@@ -577,11 +580,13 @@ function highlightIntersectedNeighborVertex() {
 var transformEdgeDrawn = false;
 function resetIntersectedNeighborVertex() {
     console.log("reset hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]);
-    // TODO hide the display window
+}
 
-    // TODO hide the visualized edge transformation
+function resetTransformBoxAndLine() {
     transformEdgeDrawn = false;
-    if (transformLine !== undefined) {
+    if (transformLine !== undefined &&
+        transformBox !== undefined) {
+
         transformLine.visible = false;
         transformBox.visible = false;
         disposeObject(transformLine);
@@ -666,6 +671,9 @@ function resetPrevIntersect() {
     }
 
     highlightBox.visible = false;
+    // reset transformLine and transformBox when user deselect the vertex
+    resetTransformBoxAndLine();
+    // TODO hide displayed info of hovered neighbor edge
 }
 
 function applyVertexColors( geometry, color ) {
