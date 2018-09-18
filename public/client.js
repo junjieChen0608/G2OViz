@@ -114,7 +114,7 @@ function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
 
 		for (var vid in verticesFromBackend) {
 		    var curVertex = verticesFromBackend[vid];
-            drawVertex(vid, curVertex["ori"], curVertex["pos"], curVertex["fullInfo"]);
+            drawVertexGeometry(vid, curVertex["ori"], curVertex["pos"], curVertex["fullInfo"]);
         }
 
 		// merge all drawn vertex geometries to render a single mesh
@@ -169,7 +169,7 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
         for (var i  = 0; i < edgeArray.length; ++i) {
             var fromPos = edgeArray[i]["fromPos"];
             var toPos = edgeArray[i]["toPos"];
-            drawEdge(fromPos, toPos);
+            drawEdgeGeometry(fromPos, toPos);
         }
 
         // merge all drawn edge geometries to render a single line segment
@@ -228,8 +228,8 @@ function getVertexNeighbors(graphName, vid) {
         var leadTo;
         for (var i = 0; i < edgesKeyView.length; ++i) {
             leadTo = edgesKeyView[i];
-            drawNeighborEdge(fromPos, edges[leadTo]["pos"]);
-            drawNeighborVertex(leadTo, edges[leadTo]["ori"], edges[leadTo]["pos"],
+            drawNeighborEdgeGeometry(fromPos, edges[leadTo]["pos"]);
+            drawNeighborVertexGeometry(leadTo, edges[leadTo]["ori"], edges[leadTo]["pos"],
                                edges[leadTo]["fullEdgeInfo"]);
         }
 
@@ -281,7 +281,7 @@ function extractPoints(fromPos, toPos) {
 }
 
 // draw line segment
-function drawEdge(fromPos, toPos) {
+function drawEdgeGeometry(fromPos, toPos) {
 	var points = extractPoints(fromPos, toPos);
 	var edgeGeometry = new THREE.BufferGeometry();
 	edgeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
@@ -289,7 +289,7 @@ function drawEdge(fromPos, toPos) {
 }
 
 // draw neighbor edges
-function drawNeighborEdge(fromPos, toPos) {
+function drawNeighborEdgeGeometry(fromPos, toPos) {
     // console.log("draw selectable edge"
     //             + "\nfrom " + fromPos
     //             + "\nto " + toPos);
@@ -303,7 +303,7 @@ function drawNeighborEdge(fromPos, toPos) {
 // draw selectable neighbor vertices
 var neighborVertexGeometries = [];
 var neighborVertexObjects = [];
-function drawNeighborVertex(leadTo, ori, pos, fullEdgeInfo) {
+function drawNeighborVertexGeometry(leadTo, ori, pos, fullEdgeInfo) {
     // console.log("draw neighbor " + leadTo
     //             + "\nori " + ori + "\npos " + pos);
 
@@ -327,7 +327,7 @@ function drawNeighborVertex(leadTo, ori, pos, fullEdgeInfo) {
 }
 
 // handle poses JSON
-function drawVertex(vid, ori, pos, fullInfo) {
+function drawVertexGeometry(vid, ori, pos, fullInfo) {
 
     var geometry = new THREE.ConeBufferGeometry(0.5, 1, 8, 1, false, 0, 6.3);
 
@@ -367,7 +367,7 @@ function drawVertex(vid, ori, pos, fullInfo) {
 var container, stats;
 var camera, controls, scene, renderer, light;
 var pickingData = [], pickingTexture, pickingScene;
-var highlightBox;
+var highlightBox, transformBox;
 var raycaster;
 var currentIntersected;
 
@@ -463,9 +463,14 @@ function initInvariants() {
 	scene.add(light);
 
 	highlightBox = new THREE.Mesh(new THREE.ConeBufferGeometry(0.6, 1.1, 8, 1, false, 0, 6.3),
-								  new THREE.MeshLambertMaterial( { color: 0xffff00 }));
+								  new THREE.MeshLambertMaterial({color: colorOnSelect}));
 	highlightBox.scale.copy(scale);
 	scene.add(highlightBox);
+
+	transformBox = new THREE.Mesh(new THREE.ConeBufferGeometry(0.6, 1.1, 8, 1, false, 0, 6.3),
+                                  new THREE.MeshLambertMaterial({color: colorOnSelect}));
+	transformBox.scale.copy(scale);
+	scene.add(transformBox);
 	
 	raycaster = new THREE.Raycaster();
 	raycaster.linePrecision = 3;
@@ -537,11 +542,15 @@ function highlightIntersectedNeighborVertex() {
     console.log("hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]
                 + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
     // TODO display more info of this edge
+
+    // TODO visualize edge transformation to selected edge
 }
 
 function resetIntersectedNeighborVertex() {
     console.log("reset hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]);
     // TODO hide the display window
+
+    // TODO hide the visualized edge transformation
 }
 
 // TODO implement a switch to toggle between select mode and pan mode
@@ -644,7 +653,6 @@ function pick() {
 		if (data.position && data.rotation && data.vid){
 			highlightBox.position.copy(data.position);
 			highlightBox.rotation.copy(data.rotation);
-			highlightBox.scale.copy(scale);
 			highlightBox.visible = true;
 		}
 		console.log("vid: " + data.vid
