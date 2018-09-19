@@ -3,7 +3,7 @@ console.log('server running');
 const express = require('express');
 const MongoClient = require('mongodb').MongoClient;
 const app = express();
-const JSONStream = require('JSONStream');
+// const JSONStream = require('JSONStream');
 
 app.use(express.static('public'));
 app.use(express.static(__dirname + '/build'));

@@ -138,8 +138,6 @@ function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
 			// query is finished, update both page and console
 			document.getElementById('mainDiv').innerHTML = "done";
 
-			// pickingScene.add(new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(vertexGeometriesPicking),
-            //                                 pickingMaterial));
             console.log("draw vertices from back-end DONE");
 			// query edge count of given graph
 			countEdge(graphName);
@@ -346,20 +344,6 @@ function drawVertexGeometry(vid, ori, pos, fullInfo) {
     vertexObject.userData = {"fullInfo": fullInfo};
 
     totalVertexObjectDrawn.push(vertexObject);
-
-    // the rest of this section servers the pick function
-    // geometry = geometry.clone();
-    // give the geometry's vertices a color corresponding to the id
-    // applyVertexColors(geometry, color.setHex(universalCounter));
-
-    // vertexGeometriesPicking.push(geometry);
-
-    // pickingData[universalCounter] = {
-    // 	position: position,
-    // 	rotation: rotation,
-    // 	vid: vid
-    // };
-    // ++universalCounter;
 }
 
 /******************************************* three.js **************************************************/
@@ -367,7 +351,6 @@ var container, stats;
 var vertexInfoWindow, edgeInfoWindow;
 var modeDiv, renderOptionDiv;
 var camera, controls, scene, renderer, light;
-var pickingData = [], pickingTexture, pickingScene;
 var highlightBox, transformBox;
 var transformLine;
 var raycaster;
@@ -377,13 +360,11 @@ var transformEdgeDrawn = false;
 var panMode = true;
 var canCastRay = true;
 
-var pickingMaterial;
 var defaultVertexMaterial;
 var defaultEdgeMaterial;
 var neighborEdgeMaterial;
 
 var vertexGeometriesDrawn = [];
-var vertexGeometriesPicking = [];
 var edgeGeometriesDrawn = [];
 
 var mouse = new THREE.Vector2();
@@ -398,16 +379,12 @@ const colorOnSelect = 0xefdc04;
 
 const scale = new THREE.Vector3(0.7, 0.7, 0.7);
 
-var universalCounter = 0;
-
 // render the scene batch by batch
 // init();
 // animate();
 
 function init() {
 	vertexGeometriesDrawn = [];
-	vertexGeometriesPicking = [];
-	pickingData = [];
 	edgeGeometriesDrawn = [];
 	initInvariants();
 }
@@ -453,11 +430,7 @@ function initInvariants() {
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
 	camera.position.z = 2000;
 
-	pickingScene = new THREE.Scene();
-	pickingTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
-	pickingTexture.texture.minFilter = THREE.LinearFilter;
 
-	pickingMaterial = new THREE.MeshBasicMaterial({vertexColors: THREE.VertexColors});
 	defaultVertexMaterial = new THREE.MeshPhongMaterial({color: 0xffffff,
                                                    flatShading: true,
                                                    vertexColors: THREE.VertexColors,
@@ -768,38 +741,4 @@ function applyVertexColors( geometry, color ) {
 	}
 
 	geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
-}
-
-// DEPRECATED
-function pick() {
-	//render the picking scene off-screen
-	renderer.render( pickingScene, camera, pickingTexture );
-
-	//create buffer for reading single pixel
-
-	var pixelBuffer = new Uint8Array( 4 );
-
-	//read the pixel under the mouse from the texture
-
-	renderer.readRenderTargetPixels( pickingTexture, mouse.x, pickingTexture.height - mouse.y, 1, 1, pixelBuffer );
-
-	//interpret the pixel as an ID
-
-	var id = ( pixelBuffer[ 0 ] << 16 ) | ( pixelBuffer[ 1 ] << 8 ) | ( pixelBuffer[ 2 ] );
-	var data = pickingData[ id ];
-	if (data) {
-
-		//move our highlightBox so that it surrounds the picked object
-
-		if (data.position && data.rotation && data.vid){
-			highlightBox.position.copy(data.position);
-			highlightBox.rotation.copy(data.rotation);
-			highlightBox.visible = true;
-		}
-		console.log("vid: " + data.vid
-					+ "\npos: " + JSON.stringify(data.position));
-
-	} else {
-		highlightBox.visible = false;
-	}
 }
