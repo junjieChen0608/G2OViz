@@ -515,17 +515,17 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     if (vertexInfoWindow.style.visibility === "visible") {
-        vertexInfoWindow.style.left = (window.innerWidth - vertexInfoWindow.offsetWidth - 20) + "px";
+        vertexInfoWindow.style.left = computeVertexInfoWindowLeft();
     }
 
     if (edgeInfoWindow.style.visibility === "visible") {
-        edgeInfoWindow.style.top = (window.innerHeight - edgeInfoWindow.offsetHeight - 30 - window.pageYOffset) + "px";
+        edgeInfoWindow.style.top = computeEdgeInfoWindowTop();
     }
 }
 
 function onWindowScroll() {
     if (edgeInfoWindow.style.visibility === "visible") {
-        edgeInfoWindow.style.top = (window.innerHeight - edgeInfoWindow.offsetHeight - 30 - window.pageYOffset) + "px";
+        edgeInfoWindow.style.top = computeEdgeInfoWindowTop();
     }
 }
 
@@ -536,6 +536,14 @@ function onDocumentKeyClick(event) {
         panMode = !panMode;
         modeDiv.innerHTML = "mode: " + ((panMode) ? "pan" : "select");
     }
+}
+
+function computeVertexInfoWindowLeft() {
+    return (window.innerWidth - vertexInfoWindow.offsetWidth - 20) + "px";
+}
+
+function computeEdgeInfoWindowTop() {
+    return (window.innerHeight - edgeInfoWindow.offsetHeight - 30 - window.pageYOffset) + "px";
 }
 
 // animate loop, render the scene
@@ -584,7 +592,7 @@ function highlightIntersectedNeighborVertex() {
 
     // console.log("full edge info\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
     // display info of this edge
-    edgeInfoWindow.style.top = (window.innerHeight - edgeInfoWindow.offsetHeight - 30 - window.pageYOffset) + "px";
+    edgeInfoWindow.style.top = computeEdgeInfoWindowTop();
     edgeInfoWindow.innerHTML = "edge info:\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2);
     edgeInfoWindow.style.visibility = "visible";
 
@@ -706,7 +714,7 @@ function highlightIntersect() {
     // console.log(JSON.stringify(currentIntersected.userData["fullInfo"], null, 2));
 
     // display selected vertex info window
-    vertexInfoWindow.style.left = (window.innerWidth - vertexInfoWindow.offsetWidth - 20) + "px";
+    vertexInfoWindow.style.left = computeVertexInfoWindowLeft();
     vertexInfoWindow.innerHTML = "selected vertex info:\n"
                                  + JSON.stringify(currentIntersected.userData["fullInfo"], null, 2);
     vertexInfoWindow.style.visibility = "visible";
