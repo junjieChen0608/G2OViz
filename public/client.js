@@ -258,6 +258,7 @@ function getVertexNeighbors(graphName, vid) {
         if (neighborVertexObjects.length) {
             hoverNeighborON = true;
         }
+        canCastRay = true;
     })
     .catch(function(err) {
         console.log(err);
@@ -374,6 +375,7 @@ var currentIntersected;
 var intersectedNeighborVertex;
 var transformEdgeDrawn = false;
 var panMode = true;
+var canCastRay = true;
 
 var pickingMaterial;
 var defaultVertexMaterial;
@@ -495,7 +497,10 @@ function initInvariants() {
 
 function onDocumentMouseClick(event) {
     // mouse click event is blocked by pan mode
-    if (event.button === 0 && !panMode) {
+    if (event.button === 0 &&
+        !panMode && canCastRay) {
+        // block next ray cast here, it will enabled in highlight subroutine
+        canCastRay = false;
         highlight(totalVertexObjectDrawn);
     }
 }
@@ -702,6 +707,7 @@ function highlight(objectsToIntersect) {
 			resetPrevIntersect();
 		}
 		currentIntersected = undefined;
+		canCastRay = true;
 	}
 }
 
