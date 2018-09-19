@@ -14,7 +14,25 @@
 		</style>
 	</head>
 	<body>
-	    <div id="mode" style="position: fixed; top: 50px; left: 0px; visibility: hidden">mode: pan</div>
+	    <pre id="vertexInfoWindow"
+             style="position: fixed;
+                    visibility: hidden;
+                    background: #f0f0f0;
+                    top: 0px;
+                    width: 300px;
+                    height: 400px;
+                    overflow: auto"></pre>
+
+        <pre id="edgeInfoWindow"
+             style="position: fixed;
+                    visibility: hidden;
+                    background: #f0f0f0;
+                    left: 2px;
+                    width: 300px;
+                    height: 400px;
+                    overflow: auto"></pre>
+
+	    <div id="mode" style="position: fixed; top: 50px; left: 2px; visibility: hidden">mode: pan</div>
 		<div id="container"></div>
 
 		<div id="mainDiv"></div>

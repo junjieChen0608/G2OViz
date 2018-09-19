@@ -360,6 +360,7 @@ function drawVertexGeometry(vid, ori, pos, fullInfo) {
 
 /******************************************* three.js **************************************************/
 var container, stats;
+var vertexInfoWindow, edgeInfoWindow;
 var camera, controls, scene, renderer, light;
 var pickingData = [], pickingTexture, pickingScene;
 var highlightBox, transformBox;
@@ -434,7 +435,8 @@ function initStats() {
 }
 
 function initInvariants() {
-	container = document.getElementById( "container" );
+	container = document.getElementById("container");
+	vertexInfoWindow = document.getElementById("vertexInfoWindow");
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
 	camera.position.z = 2000;
 
@@ -480,6 +482,7 @@ function initInvariants() {
 }
 
 function onDocumentMouseClick(event) {
+    // mouse click event is blocked by pan mode
     if (event.button === 0 && !panMode) {
         highlight(totalVertexObjectDrawn);
     }
@@ -498,9 +501,14 @@ function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    if (vertexInfoWindow.style.visibility === "visible") {
+        vertexInfoWindow.style.left = (window.innerWidth - vertexInfoWindow.offsetWidth - 20) + "px";
+    }
 }
 
 function onDocumentKeyClick(event) {
+    // toggle pan mode by pressing x
     if (event.key === "x" ||
         event.key === "X") {
         panMode = !panMode;
@@ -550,20 +558,26 @@ function highlightNeighborVertex() {
 function highlightIntersectedNeighborVertex() {
     // console.log("hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]
     //             + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
+
+    console.log("full edge info\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
     // TODO display info of this edge
 
     // visualize edge transformation of selected edge
 
     var intersectPos = currentIntersected.position.toArray();
     var intersectOri = currentIntersected.quaternion.toArray();
+
     if (intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"] !== undefined) {
         var transPos = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["pos"];
         var transOri = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["ori"];
-        console.log("before\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri
-                    + "\ntransPos\n" + transPos + "\ntransOri\n" + transOri);
+
+        // console.log("before\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri
+        //             + "\ntransPos\n" + transPos + "\ntransOri\n" + transOri);
+
         applyTransform(intersectPos, transPos, intersectPos.length);
         applyTransform(intersectOri, transOri, intersectOri.length);
-        console.log("after\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri);
+
+        // console.log("after\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri);
 
         // reset previously drawn transfromLine and transformBox here
         // this ensures user to pan the view while retaining neighbor edge data
@@ -627,7 +641,6 @@ function applyTransform(original, transform, size) {
     }
 }
 
-// TODO implement a switch to toggle between select mode and pan mode
 // highlight vertex on mouse click
 function highlight(objectsToIntersect) {
 	raycaster.setFromCamera(rayTracer, camera);
@@ -665,14 +678,18 @@ function highlightIntersect() {
     highlightBox.rotation.copy(currentIntersected.rotation);
     highlightBox.visible = true;
     console.log(JSON.stringify(currentIntersected.userData["fullInfo"], null, 2));
-    // TODO display selected vertex info somehow
+    // display selected vertex info window
+    vertexInfoWindow.style.left = (window.innerWidth - vertexInfoWindow.offsetWidth - 20) + "px";
+    vertexInfoWindow.innerHTML = JSON.stringify(currentIntersected.userData["fullInfo"], null, 2);
+    vertexInfoWindow.style.visibility = "visible";
 }
 
 // reset previously highlighted element
 function resetPrevIntersect() {
     console.log("reset hit");
-    // TODO hide the display info somehow
     highlightBox.visible = false;
+    // hide the display info window
+    vertexInfoWindow.style.visibility = "hidden";
 
     cleanUpAfterDeselect();
 }
