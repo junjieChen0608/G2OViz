@@ -437,6 +437,7 @@ function initStats() {
 function initInvariants() {
 	container = document.getElementById("container");
 	vertexInfoWindow = document.getElementById("vertexInfoWindow");
+	edgeInfoWindow = document.getElementById("edgeInfoWindow");
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
 	camera.position.z = 2000;
 
@@ -477,8 +478,9 @@ function initInvariants() {
 	initRenderer();
 	initStats();
 	initControls();
-    window.addEventListener('resize', onWindowResize);
     document.body.addEventListener('keydown', onDocumentKeyClick);
+    window.addEventListener('resize', onWindowResize);
+    window.addEventListener('scroll', onWindowScroll);
 }
 
 function onDocumentMouseClick(event) {
@@ -504,6 +506,16 @@ function onWindowResize() {
 
     if (vertexInfoWindow.style.visibility === "visible") {
         vertexInfoWindow.style.left = (window.innerWidth - vertexInfoWindow.offsetWidth - 20) + "px";
+    }
+
+    if (edgeInfoWindow.style.visibility === "visible") {
+        edgeInfoWindow.style.top = (window.innerHeight - edgeInfoWindow.offsetHeight - 30 - window.pageYOffset) + "px";
+    }
+}
+
+function onWindowScroll() {
+    if (edgeInfoWindow.style.visibility === "visible") {
+        edgeInfoWindow.style.top = (window.innerHeight - edgeInfoWindow.offsetHeight - 30 - window.pageYOffset) + "px";
     }
 }
 
@@ -559,11 +571,14 @@ function highlightIntersectedNeighborVertex() {
     // console.log("hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]
     //             + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
 
-    console.log("full edge info\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
+    // console.log("full edge info\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
     // TODO display info of this edge
+    edgeInfoWindow.style.top = (window.innerHeight - edgeInfoWindow.offsetHeight - 30 - window.pageYOffset) + "px";
+    edgeInfoWindow.innerHTML = JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2);
+    edgeInfoWindow.style.visibility = "visible";
+
 
     // visualize edge transformation of selected edge
-
     var intersectPos = currentIntersected.position.toArray();
     var intersectOri = currentIntersected.quaternion.toArray();
 
@@ -598,7 +613,7 @@ function highlightIntersectedNeighborVertex() {
 
 // captures mouse out action on hovered edge, does not do much
 function resetIntersectedNeighborVertex() {
-    console.log("reset hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]);
+    console.log("reset hit edge vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]);
 }
 
 // hide previously shown transformBox and transformLine
@@ -713,6 +728,7 @@ function cleanUpAfterDeselect() {
     // reset transformLine and transformBox when user deselect the vertex
     resetTransformBoxAndLine();
     // TODO hide displayed info of hovered neighbor edge
+    edgeInfoWindow.style.visibility = "hidden";
 }
 
 // paint the vertex with given color
