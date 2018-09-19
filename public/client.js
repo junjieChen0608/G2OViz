@@ -512,7 +512,7 @@ function onDocumentKeyClick(event) {
     if (event.key === "x" ||
         event.key === "X") {
         panMode = !panMode;
-        modeDiv.innerHTML = "mode: " + ((panMode) ? "pan" : "select");
+        modeDiv.innerHTML = "mode: " + ((panMode) ? "control" : "select");
     }
 }
 

@@ -9,6 +9,7 @@ app.use(express.static('public'));
 app.use(express.static(__dirname + '/build'));
 
 let db;
+const dbName = "hdmap";
 const url = 'mongodb://localhost:27017/';
 
 // connect to db "hdmap" and listen to 8080
@@ -18,7 +19,7 @@ MongoClient.connect(url,
 		return console.log(err);
 	}
 
-	db = database.db('hdmap');
+	db = database.db(dbName);
 
 	app.listen(8080, () => {
 		console.log('listening on 8080');
