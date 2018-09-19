@@ -7,7 +7,9 @@ const edgeBatchSize = 20000;
 var totalIteration = 0;
 var totalVertex = 0;
 var totalEdgeDrawnCounter = 0;
+var originalGraphName = "";
 var graphName = "";
+var selectedPose = "";
 
 var totalVertexObjectDrawn = [];
 
@@ -17,11 +19,12 @@ button.addEventListener('click', function(event) {
 	counter = 0;
 	console.log('button clicked');
 	graphName = document.getElementById('graphName').value;
+    originalGraphName = graphName;
 	if (graphName[0] == '/') {
 		graphName = replaceSlash(graphName);
 	}
 
-	var selectedPose = document.getElementById('selectedPose').value;
+	selectedPose = document.getElementById('selectedPose').value;
     console.log("selected pose: " + selectedPose);
     if (selectedPose !== "") {
         countVertex(graphName, selectedPose);
@@ -361,6 +364,7 @@ function drawVertexGeometry(vid, ori, pos, fullInfo) {
 /******************************************* three.js **************************************************/
 var container, stats;
 var vertexInfoWindow, edgeInfoWindow;
+var modeDiv, renderOptionDiv;
 var camera, controls, scene, renderer, light;
 var pickingData = [], pickingTexture, pickingScene;
 var highlightBox, transformBox;
@@ -403,7 +407,6 @@ function init() {
 	vertexGeometriesPicking = [];
 	pickingData = [];
 	edgeGeometriesDrawn = [];
-	document.getElementById("mode").style.visibility = "visible";
 	initInvariants();
 }
 
@@ -438,6 +441,13 @@ function initInvariants() {
 	container = document.getElementById("container");
 	vertexInfoWindow = document.getElementById("vertexInfoWindow");
 	edgeInfoWindow = document.getElementById("edgeInfoWindow");
+	modeDiv = document.getElementById("mode");
+	modeDiv.style.visibility = "visible";
+	renderOptionDiv = document.getElementById("renderOption");
+	renderOptionDiv.style.visibility = "visible";
+	renderOptionDiv.innerHTML = "graph name: " + originalGraphName
+                                + "<br/>chosen pose: " + selectedPose;
+
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
 	camera.position.z = 2000;
 
@@ -524,7 +534,7 @@ function onDocumentKeyClick(event) {
     if (event.key === "x" ||
         event.key === "X") {
         panMode = !panMode;
-        document.getElementById("mode").innerHTML = "mode: " + ((panMode) ? "pan" : "select");
+        modeDiv.innerHTML = "mode: " + ((panMode) ? "pan" : "select");
     }
 }
 
@@ -551,7 +561,8 @@ function highlightNeighborVertex() {
     var intersects = raycaster.intersectObjects(neighborVertexObjects);
 
     if (intersects.length > 0) {
-        if (intersectedNeighborVertex !== undefined) {
+        if (intersectedNeighborVertex !== undefined &&
+            intersectedNeighborVertex !== intersects[0].object) {
             resetIntersectedNeighborVertex();
         }
         intersectedNeighborVertex = intersects[0].object;
@@ -572,9 +583,9 @@ function highlightIntersectedNeighborVertex() {
     //             + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
 
     // console.log("full edge info\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
-    // TODO display info of this edge
+    // display info of this edge
     edgeInfoWindow.style.top = (window.innerHeight - edgeInfoWindow.offsetHeight - 30 - window.pageYOffset) + "px";
-    edgeInfoWindow.innerHTML = JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2);
+    edgeInfoWindow.innerHTML = "edge info:\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2);
     edgeInfoWindow.style.visibility = "visible";
 
 
@@ -692,10 +703,12 @@ function highlightIntersect() {
     highlightBox.position.copy(currentIntersected.position);
     highlightBox.rotation.copy(currentIntersected.rotation);
     highlightBox.visible = true;
-    console.log(JSON.stringify(currentIntersected.userData["fullInfo"], null, 2));
+    // console.log(JSON.stringify(currentIntersected.userData["fullInfo"], null, 2));
+
     // display selected vertex info window
     vertexInfoWindow.style.left = (window.innerWidth - vertexInfoWindow.offsetWidth - 20) + "px";
-    vertexInfoWindow.innerHTML = JSON.stringify(currentIntersected.userData["fullInfo"], null, 2);
+    vertexInfoWindow.innerHTML = "selected vertex info:\n"
+                                 + JSON.stringify(currentIntersected.userData["fullInfo"], null, 2);
     vertexInfoWindow.style.visibility = "visible";
 }
 
@@ -727,7 +740,7 @@ function cleanUpAfterDeselect() {
 
     // reset transformLine and transformBox when user deselect the vertex
     resetTransformBoxAndLine();
-    // TODO hide displayed info of hovered neighbor edge
+    // hide displayed info of hovered neighbor edge
     edgeInfoWindow.style.visibility = "hidden";
 }
 
