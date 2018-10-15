@@ -9,6 +9,7 @@ var originalGraphName = "";
 var graphName = "";
 var selectedPose = "";
 var totalVertexObjectDrawn = [];
+var allNonInteractiveEdges = new THREE.Group();
 
 const VERTEX_BATCH_SIZE = 5000;
 const EDGE_BATCH_SIZE = 20000;
@@ -102,7 +103,7 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
             if (edgeGeometriesDrawn.length) {
                 var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn),
                     defaultEdgeMaterial);
-                scene.add(mergedEdgeObject);
+                allNonInteractiveEdges.add(mergedEdgeObject);
             }
             edgeGeometriesDrawn = [];
 
@@ -113,6 +114,7 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
                 console.log("draw edges from back-end DONE"
                     + "\ntotal " + totalEdgeDrawnCounter + " edges drawn");
                 console.log("\n****************************************\n");
+                scene.add(allNonInteractiveEdges);
             }
 
         })
