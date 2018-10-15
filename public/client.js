@@ -451,7 +451,7 @@ function initInvariants() {
 	highlightBox.scale.copy(scale);
 	scene.add(highlightBox);
 
-	transformBox = new THREE.Mesh(new THREE.ConeBufferGeometry(0.6, 1.1, 8, 1, false, 0, 6.3),
+	transformBox = new THREE.Mesh(new THREE.ConeBufferGeometry(0.7, 1.2, 8, 1, false, 0, 6.3),
                                   new THREE.MeshLambertMaterial({color: colorOnSelect}));
 
 	transformBox.scale.copy(scale);
@@ -569,6 +569,7 @@ function highlightIntersectedNeighborVertex() {
     //             + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
 
     // console.log("full edge info\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
+
     // display info of this edge
     edgeInfoWindow.style.top = computeEdgeInfoWindowTop();
     edgeInfoWindow.innerHTML = "edge info:\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2);
@@ -576,18 +577,26 @@ function highlightIntersectedNeighborVertex() {
 
 
     // visualize edge transformation of selected edge
-    var intersectPos = currentIntersected.position.toArray();
-    var intersectOri = currentIntersected.quaternion.toArray();
+    var intersectPos = currentIntersected.position;
+    var intersectOri = currentIntersected.quaternion;
 
     if (intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"] !== undefined) {
-        var transPos = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["pos"];
-        var transOri = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["ori"];
+        var transPosVec = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["pos"];
+        var transOriVec = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["ori"];
+
+        // TODO construct THREE.js object from transform
+        var transPos = new THREE.Vector3();
+        transPos.fromArray(transPosVec);
+        var transOriVecShuffled = [transOriVec[1], transOriVec[2], transOriVec[3], transOriVec[0]];
+        var transOri = new THREE.Quaternion();
+        transOri.fromArray(transOriVecShuffled);
+
+        var selectedVertexMat = new THREE.Matrix4().compose(intersectPos, intersectOri, scale);
+        var selectedNeighborVertexMat = new THREE.Matrix4().compose(transPos, transOri, scale);
+        var transformationMat = new THREE.Matrix4().multiplyMatrices(selectedVertexMat, selectedNeighborVertexMat);
 
         // console.log("before\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri
-        //             + "\ntransPos\n" + transPos + "\ntransOri\n" + transOri);
-
-        applyTransform(intersectPos, transPos, intersectPos.length);
-        applyTransform(intersectOri, transOri, intersectOri.length);
+        //             + "\ntransPosVec\n" + transPosVec + "\ntransOriVec\n" + transOriVec);
 
         // console.log("after\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri);
 
@@ -595,11 +604,17 @@ function highlightIntersectedNeighborVertex() {
         // this ensures user to pan the view while retaining neighbor edge data
         resetTransformBoxAndLine();
         if (!transformEdgeDrawn) {
-            drawTransformEdge(intersectedNeighborVertex.position.toArray(), intersectPos);
+            console.log("drawing neighbor edge and vertex");
+            var tempPos = new THREE.Vector3();
+            var tempOri = new THREE.Quaternion();
+            var tempScale = new THREE.Vector3();
+            transformationMat.decompose(tempPos, tempOri, tempScale);
+            drawTransformEdge(tempPos.toArray(), intersectPos.toArray());
+
             var position = new THREE.Vector3();
-            position.fromArray(intersectPos);
+            position.fromArray(tempPos.toArray());
             var quaternion = new THREE.Quaternion();
-            quaternion.fromArray(intersectOri);
+            quaternion.fromArray(tempOri.toArray());
             var rotation = new THREE.Euler().setFromQuaternion(quaternion);
             transformBox.position.copy(position);
             transformBox.rotation.copy(rotation);
@@ -643,13 +658,6 @@ function disposeObject(obj) {
         obj.material.dispose();
         scene.remove(obj);
         obj = undefined;
-    }
-}
-
-// apply transformation to each field of given dataz
-function applyTransform(original, transform, size) {
-    for (var i = 0; i < size; ++i) {
-        original[i] += transform[i];
     }
 }
 
