@@ -576,7 +576,7 @@ function highlightIntersectedNeighborVertex() {
     edgeInfoWindow.style.visibility = "visible";
 
 
-    // visualize edge transformation of selected edge
+    // get pos and ori of selected vertex
     var intersectPos = currentIntersected.position;
     var intersectOri = currentIntersected.quaternion;
 
@@ -584,15 +584,15 @@ function highlightIntersectedNeighborVertex() {
         var transPosVec = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["pos"];
         var transOriVec = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["ori"];
 
-        // TODO construct THREE.js object from transform
-        var transPos = new THREE.Vector3();
-        transPos.fromArray(transPosVec);
+        // construct THREE.js Vector3 and Quaternion from hovered neighbor vertex
+        var transPos = new THREE.Vector3().fromArray(transPosVec);
         var transOriVecShuffled = [transOriVec[1], transOriVec[2], transOriVec[3], transOriVec[0]];
-        var transOri = new THREE.Quaternion();
-        transOri.fromArray(transOriVecShuffled);
+        var transOri = new THREE.Quaternion().fromArray(transOriVecShuffled);
 
+        // construct 4x4 transform matrix from selected vertex and hovered vertex
         var selectedVertexMat = new THREE.Matrix4().compose(intersectPos, intersectOri, scale);
         var selectedNeighborVertexMat = new THREE.Matrix4().compose(transPos, transOri, scale);
+        // compose a transformed matrix
         var transformationMat = new THREE.Matrix4().multiplyMatrices(selectedVertexMat, selectedNeighborVertexMat);
 
         // console.log("before\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri
@@ -611,10 +611,8 @@ function highlightIntersectedNeighborVertex() {
             transformationMat.decompose(tempPos, tempOri, tempScale);
             drawTransformEdge(tempPos.toArray(), intersectPos.toArray());
 
-            var position = new THREE.Vector3();
-            position.fromArray(tempPos.toArray());
-            var quaternion = new THREE.Quaternion();
-            quaternion.fromArray(tempOri.toArray());
+            var position = new THREE.Vector3().fromArray(tempPos.toArray());
+            var quaternion = new THREE.Quaternion().fromArray(tempOri.toArray());
             var rotation = new THREE.Euler().setFromQuaternion(quaternion);
             transformBox.position.copy(position);
             transformBox.rotation.copy(rotation);
