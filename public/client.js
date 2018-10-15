@@ -63,6 +63,14 @@ function countEdge(graphName) {
 	});
 }
 
+// draw line segment
+function drawEdgeGeometry(fromPos, toPos) {
+    var points = extractPoints(fromPos, toPos);
+    var edgeGeometry = new THREE.BufferGeometry();
+    edgeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+    edgeGeometriesDrawn.push(edgeGeometry);
+}
+
 // query given graph's edges batch by batch, then draw them
 function queryGraphEdge(graphName, edgeBatchSize, index) {
     fetch('/queryGraphEdge/' + graphName + '/' + edgeBatchSize + '/' + index, {method: 'GET'})
@@ -275,14 +283,6 @@ function extractPoints(fromPos, toPos) {
         fromPos[0], fromPos[1], fromPos[2],
         toPos[0], toPos[1], toPos[2],
     ];
-}
-
-// draw line segment
-function drawEdgeGeometry(fromPos, toPos) {
-	var points = extractPoints(fromPos, toPos);
-	var edgeGeometry = new THREE.BufferGeometry();
-	edgeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-	edgeGeometriesDrawn.push(edgeGeometry);
 }
 
 // draw neighbor edges
