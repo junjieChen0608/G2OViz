@@ -15,6 +15,7 @@ var totalVertexObjectDrawn = [];
 
 const button = document.getElementById('render');
 
+// render button event listener
 button.addEventListener('click', function(event) {
 	counter = 0;
 	console.log('button clicked');
@@ -61,6 +62,56 @@ function countEdge(graphName) {
 		document.getElementById('mainDiv').innerHTML = "count edges failed";
 		console.log(err);
 	});
+}
+
+// query given graph's edges batch by batch, then draw them
+function queryGraphEdge(graphName, edgeBatchSize, index) {
+    fetch('/queryGraphEdge/' + graphName + '/' + edgeBatchSize + '/' + index, {method: 'GET'})
+        .then(function(response) {
+            if (response.ok) {
+                console.log('query graph edges successful');
+                return response.json();
+            }
+            throw new Error('query graph edges failed');
+        })
+        .then(function(responseJSON) {
+            var edgesFromBackend = JSON.parse(JSON.stringify(responseJSON));
+            var backEndIndex = edgesFromBackend["index"];
+            var backEndEdgeCount = edgesFromBackend["edgeCount"];
+            // console.log("backend index: " + backEndIndex
+            //             + "\nbackend edge count " + backEndEdgeCount);
+            totalEdgeDrawnCounter += backEndEdgeCount;
+            // var head = edgesFromBackend["edges"][0]["fromPos"];
+            // console.log(head[0]);
+
+            var edgeArray = edgesFromBackend["edges"];
+            for (var i  = 0; i < edgeArray.length; ++i) {
+                var fromPos = edgeArray[i]["fromPos"];
+                var toPos = edgeArray[i]["toPos"];
+                drawEdgeGeometry(fromPos, toPos);
+            }
+
+            // merge all drawn edge geometries to render a single line segment
+            if (edgeGeometriesDrawn.length) {
+                var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn),
+                    defaultEdgeMaterial);
+                scene.add(mergedEdgeObject);
+            }
+            edgeGeometriesDrawn = [];
+
+            if (backEndIndex < totalVertex) {
+                console.log("draw edges from back-end");
+                queryGraphEdge(graphName, edgeBatchSize, ++backEndIndex);
+            } else {
+                console.log("draw edges from back-end DONE"
+                    + "\ntotal " + totalEdgeDrawnCounter + " edges drawn");
+                console.log("\n****************************************\n");
+            }
+
+        })
+        .catch(function(err) {
+            console.log(err);
+        });
 }
 
 // query the given graph to count total vertices
@@ -147,56 +198,6 @@ function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
 		document.getElementById('mainDiv').innerHTML = graphName + " not found";
 		console.log(err);
 	});
-}
-
-// query given graph's edges batch by batch, then draw them
-function queryGraphEdge(graphName, edgeBatchSize, index) {
-    fetch('/queryGraphEdge/' + graphName + '/' + edgeBatchSize + '/' + index, {method: 'GET'})
-    .then(function(response) {
-        if (response.ok) {
-            console.log('query graph edges successful');
-            return response.json();
-        }
-        throw new Error('query graph edges failed');
-    })
-    .then(function(responseJSON) {
-        var edgesFromBackend = JSON.parse(JSON.stringify(responseJSON));
-        var backEndIndex = edgesFromBackend["index"];
-        var backEndEdgeCount = edgesFromBackend["edgeCount"];
-        // console.log("backend index: " + backEndIndex
-        //             + "\nbackend edge count " + backEndEdgeCount);
-        totalEdgeDrawnCounter += backEndEdgeCount;
-        // var head = edgesFromBackend["edges"][0]["fromPos"];
-        // console.log(head[0]);
-
-        var edgeArray = edgesFromBackend["edges"];
-        for (var i  = 0; i < edgeArray.length; ++i) {
-            var fromPos = edgeArray[i]["fromPos"];
-            var toPos = edgeArray[i]["toPos"];
-            drawEdgeGeometry(fromPos, toPos);
-        }
-
-        // merge all drawn edge geometries to render a single line segment
-        if (edgeGeometriesDrawn.length) {
-        	var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn),
-                                                          defaultEdgeMaterial);
-        	scene.add(mergedEdgeObject);
-        }
-        edgeGeometriesDrawn = [];
-
-        if (backEndIndex < totalVertex) {
-            console.log("draw edges from back-end");
-            queryGraphEdge(graphName, edgeBatchSize, ++backEndIndex);
-        } else {
-            console.log("draw edges from back-end DONE"
-                        + "\ntotal " + totalEdgeDrawnCounter + " edges drawn");
-            console.log("\n****************************************\n");
-        }
-
-    })
-    .catch(function(err) {
-        console.log(err);
-    });
 }
 
 // query given vertex's neighbors
