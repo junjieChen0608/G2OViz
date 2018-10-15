@@ -2,21 +2,20 @@
 console.log('client running');
 
 var verticesFromBackend;
-const vertexBatchSize = 5000;
-const edgeBatchSize = 20000;
 var totalIteration = 0;
 var totalVertex = 0;
 var totalEdgeDrawnCounter = 0;
 var originalGraphName = "";
 var graphName = "";
 var selectedPose = "";
-
 var totalVertexObjectDrawn = [];
 
-const button = document.getElementById('render');
+const VERTEX_BATCH_SIZE = 5000;
+const EDGE_BATCH_SIZE = 20000;
+const RENDER_BUTTON = document.getElementById('render');
 
 // render button event listener
-button.addEventListener('click', function(event) {
+RENDER_BUTTON.addEventListener('click', function(event) {
 	counter = 0;
 	console.log('button clicked');
 	graphName = document.getElementById('graphName').value;
@@ -40,7 +39,7 @@ input.addEventListener('keyup', function(event) {
 	event.preventDefault();
 
 	if (event.keyCode === 13) {
-		button.click();
+		RENDER_BUTTON.click();
 	}
 });
 
@@ -53,7 +52,7 @@ function countEdge(graphName) {
 	.then(function(response) {
 		if (response.ok) {
 			console.log('count edges successful');
-            queryGraphEdge(graphName, edgeBatchSize, 0);
+            queryGraphEdge(graphName, EDGE_BATCH_SIZE, 0);
             return;
 		}
 		throw new Error('count edges failed');
@@ -131,14 +130,14 @@ function countVertex(graphName, selectedPose) {
 		totalVertex = JSON.stringify(responseJSON);
 		console.log("total vertex " + totalVertex);
 		
-		totalIteration = Math.floor(totalVertex / vertexBatchSize) + ((totalVertex % vertexBatchSize) ? 1 : 0);
+		totalIteration = Math.floor(totalVertex / VERTEX_BATCH_SIZE) + ((totalVertex % VERTEX_BATCH_SIZE) ? 1 : 0);
 		console.log("need to iterate " + totalIteration);
 		
 		// query the graph in a loop
 		if (totalVertex > 0) {
 			init();
 			animate();
-			queryGraphVertex(graphName, selectedPose, vertexBatchSize, 0);
+			queryGraphVertex(graphName, selectedPose, VERTEX_BATCH_SIZE, 0);
 		} else {
 			throw new Error('count vertex failed');		
 		}
@@ -312,9 +311,9 @@ function drawNeighborVertexGeometry(leadTo, ori, pos, fullEdgeInfo) {
     var quaternion = new THREE.Quaternion(ori[1], ori[2], ori[3], ori[0]);
     var rotation = new THREE.Euler().setFromQuaternion(quaternion);
 
-    matrix.compose(position, quaternion, scale);
+    matrix.compose(position, quaternion, SCALE);
     geometry.applyMatrix(matrix);
-    applyVertexColors(geometry, color.setHex(colorNeighborVertex));
+    applyVertexColors(geometry, color.setHex(COLOR_NEIGHBOR_VERTEX));
     neighborVertexGeometries.push(geometry);
     // the actual object to be intersected with
     var neighborVertexObject = new THREE.Mesh(geometry, defaultVertexMaterial);
@@ -334,10 +333,10 @@ function drawVertexGeometry(vid, ori, pos, fullInfo) {
     var quaternion = new THREE.Quaternion(ori[1], ori[2], ori[3], ori[0]);
     var rotation = new THREE.Euler().setFromQuaternion(quaternion);
 
-    matrix.compose(position, quaternion, scale);
+    matrix.compose(position, quaternion, SCALE);
     geometry.applyMatrix(matrix);
     // give the geometry's vertices color
-    applyVertexColors(geometry, color.setHex(colorVertex));
+    applyVertexColors(geometry, color.setHex(COLOR_VERTEX));
     vertexGeometriesDrawn.push(geometry);
     var vertexObject = new THREE.Mesh(geometry, defaultVertexMaterial);
     vertexObject.position.copy(position);
@@ -372,17 +371,13 @@ var mouse = new THREE.Vector2();
 var rayTracer = new THREE.Vector2();
 
 var color = new THREE.Color();
-const colorVertex = 0x135cd3;
-const colorEdge = 0x7f0026;
-const colorNeighborVertex = 0x29bf1e;
-const colorNeighborEdge = 0x29bf1e;
-const colorOnSelect = 0xefdc04;
 
-const scale = new THREE.Vector3(0.7, 0.7, 0.7);
-
-// render the scene batch by batch
-// init();
-// animate();
+const COLOR_VERTEX = 0x135cd3;
+const COLOR_EDGE = 0x7f0026;
+const COLOR_NEIGHBOR_VERTEX = 0x29bf1e;
+const COLOR_NEIGHBOR_EDGE = 0x29bf1e;
+const COLOR_ON_SELECT = 0xefdc04;
+const SCALE = new THREE.Vector3(0.7, 0.7, 0.7);
 
 function init() {
 	vertexGeometriesDrawn = [];
@@ -436,8 +431,8 @@ function initInvariants() {
                                                    flatShading: true,
                                                    vertexColors: THREE.VertexColors,
                                                    shininess: 0});
-	defaultEdgeMaterial = new THREE.LineBasicMaterial({color: colorEdge});
-    neighborEdgeMaterial = new THREE.LineBasicMaterial({color: colorNeighborEdge});
+	defaultEdgeMaterial = new THREE.LineBasicMaterial({color: COLOR_EDGE});
+    neighborEdgeMaterial = new THREE.LineBasicMaterial({color: COLOR_NEIGHBOR_EDGE});
 
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xd8d8d8);
@@ -448,14 +443,14 @@ function initInvariants() {
 	scene.add(light);
 
 	highlightBox = new THREE.Mesh(new THREE.ConeBufferGeometry(0.6, 1.1, 8, 1, false, 0, 6.3),
-								  new THREE.MeshLambertMaterial({color: colorOnSelect}));
-	highlightBox.scale.copy(scale);
+								  new THREE.MeshLambertMaterial({color: COLOR_ON_SELECT}));
+	highlightBox.scale.copy(SCALE);
 	scene.add(highlightBox);
 
 	transformBox = new THREE.Mesh(new THREE.ConeBufferGeometry(0.7, 1.2, 8, 1, false, 0, 6.3),
-                                  new THREE.MeshLambertMaterial({color: colorOnSelect}));
+                                  new THREE.MeshLambertMaterial({color: COLOR_ON_SELECT}));
 
-	transformBox.scale.copy(scale);
+	transformBox.scale.copy(SCALE);
 	scene.add(transformBox);
 
 	raycaster = new THREE.Raycaster();
@@ -591,8 +586,8 @@ function highlightIntersectedNeighborVertex() {
         var transOri = new THREE.Quaternion().fromArray(transOriVecShuffled);
 
         // construct 4x4 transform matrix from selected vertex and hovered vertex
-        var selectedVertexMat = new THREE.Matrix4().compose(intersectPos, intersectOri, scale);
-        var selectedNeighborVertexMat = new THREE.Matrix4().compose(transPos, transOri, scale);
+        var selectedVertexMat = new THREE.Matrix4().compose(intersectPos, intersectOri, SCALE);
+        var selectedNeighborVertexMat = new THREE.Matrix4().compose(transPos, transOri, SCALE);
         // compose a transformed matrix
         var transformationMat = new THREE.Matrix4().multiplyMatrices(selectedVertexMat, selectedNeighborVertexMat);
 

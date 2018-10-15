@@ -33234,7 +33234,7 @@ var Cursor = function(bson, ns, cmd, options, topology, topologyOptions) {
 };
 
 Cursor.prototype.setCursorBatchSize = function(value) {
-  this.cursorState.vertexBatchSize = value;
+  this.cursorState.VERTEX_BATCH_SIZE = value;
 };
 
 Cursor.prototype.cursorBatchSize = function() {
@@ -42950,7 +42950,7 @@ AggregationCursor.prototype.batchSize = function(value) {
     throw MongoError.create({ message: 'Cursor is closed', driver: true });
   if (typeof value !== 'number')
     throw MongoError.create({ message: 'vertexBatchSize requires an integer', drvier: true });
-  if (this.s.cmd.cursor) this.s.cmd.cursor.vertexBatchSize = value;
+  if (this.s.cmd.cursor) this.s.cmd.cursor.VERTEX_BATCH_SIZE = value;
   this.setCursorBatchSize(value);
   return this;
 };
@@ -47591,7 +47591,7 @@ CommandCursor.prototype.batchSize = function(value) {
     throw MongoError.create({ message: 'Cursor is closed', driver: true });
   if (typeof value !== 'number')
     throw MongoError.create({ message: 'vertexBatchSize requires an integer', driver: true });
-  if (this.s.cmd.cursor) this.s.cmd.cursor.vertexBatchSize = value;
+  if (this.s.cmd.cursor) this.s.cmd.cursor.VERTEX_BATCH_SIZE = value;
   this.setCursorBatchSize(value);
   return this;
 };
@@ -48328,7 +48328,7 @@ Cursor.prototype.batchSize = function(value) {
     throw MongoError.create({ message: 'vertexBatchSize requires an integer', driver: true });
   }
 
-  this.s.cmd.vertexBatchSize = value;
+  this.s.cmd.VERTEX_BATCH_SIZE = value;
   this.setCursorBatchSize(value);
   return this;
 };
