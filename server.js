@@ -63,6 +63,7 @@ app.get('/countEdge/:graphName', (req, res) => {
 });
 
 // count total vertex
+// TODO pass the vertex counter to front-end
 app.get('/countVertex/:graphName', (req, res) => {
 	verticesDrawn = {};
     verticesDrawnArrayView = undefined;

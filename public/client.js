@@ -126,6 +126,7 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
 }
 
 // query the given graph to count total vertices
+// TODO simply use the vertex counter in backend
 function countVertex(graphName, selectedPose) {
 	console.log('count graph ' + graphName);
     totalEdgeDrawnCounter = 0;
