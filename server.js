@@ -32,8 +32,8 @@ app.get('/', (req, res) => {
 	res.sendFile(__dirname + '/index.html');
 });
 
-// this API is simplified to merely take over control logic
-// after all vertices are drawn
+// draw all edges after all vertices are drawn
+// TODO use the edge counter in database
 app.get('/countEdge/:graphName', (req, res) => {
 	var graphName = req.params.graphName;
 	console.log("graph to count edge: " + graphName);

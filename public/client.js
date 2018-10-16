@@ -46,6 +46,7 @@ input.addEventListener('keyup', function(event) {
 
 // this API is simplified to merely take over control flow
 // after all vertices are drawn
+// TODO backend will return a NumberLong as total number of edges
 function countEdge(graphName) {
 	console.log('count edges in graph ' + graphName);
 
@@ -73,6 +74,7 @@ function drawEdgeGeometry(fromPos, toPos) {
 }
 
 // query given graph's edges batch by batch, then draw them
+// TODO overhual this function, works similar as queryGraphVertex
 function queryGraphEdge(graphName, edgeBatchSize, index) {
     fetch('/queryGraphEdge/' + graphName + '/' + edgeBatchSize + '/' + index, {method: 'GET'})
         .then(function(response) {
@@ -580,6 +582,7 @@ function highlightNeighborVertex() {
 // subroutine of neighbor vertices highlighting
 // it displays info of selected edge
 // and draws transformBox and transformLine to visualize edge transform info
+// TODO not sure if this need to be changed to accommodate new database structure
 function highlightIntersectedNeighborVertex() {
     // console.log("hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]
     //             + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
@@ -692,6 +695,7 @@ function highlight(objectsToIntersect) {
 		highlightIntersect();
 
         // this click event triggers a query
+        // TODO query selected vertex's neighbors, then draw them all
         if (currentIntersected.userData["fullInfo"]["vid"]) {
             getVertexNeighbors(graphName, currentIntersected.userData["fullInfo"]["vid"]);
         }
