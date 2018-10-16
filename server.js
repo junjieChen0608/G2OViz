@@ -1,4 +1,4 @@
-console.log('server running');
+console.log('server running\nbuild 2.0');
 
 const express = require('express');
 const MongoClient = require('mongodb').MongoClient;
@@ -33,33 +33,19 @@ app.get('/', (req, res) => {
 });
 
 // draw all edges after all vertices are drawn
-// TODO use the edge counter in database
 app.get('/countEdge/:graphName', (req, res) => {
 	var graphName = req.params.graphName;
 	console.log("graph to count edge: " + graphName);
 
-	// simplify the count logic, just send status 200
-    res.sendStatus(200);
 
-	// var edgeCounter = 0;
-	// db.collection('vertices').find({graph_name: graphName}).forEach(
-	// 	function iterCallback(vertex) {
-	// 		if (vertex.edges && vertex.edges.length) {
-	// 			edgeCounter += vertex.edges.length;
-	// 			// console.log("edges " + edgeCounter);
-	// 		}
-	// 	},
-	// 	function endCallback(err) {
-	// 		if (err) {
-	// 			console.log(err);
-	// 		} else {
-	// 			console.log("back-end counted " + JSON.stringify(edgeCounter) + " edges"
-    //                         + "\n***********************************************************\n");
-	// 			res.send(edgeCounter.toString());
-	// 		}
-	// 	}
-	// );
-
+    var totalEdges = db.collection('graphs').findOne({name: graphName}, (err, graph) => {
+        if (err) {
+            console.log(err);
+        }
+        var totalEdges = graph["edges"];
+        console.log(graphName + " has " + totalEdges + " edges");
+        res.send(totalEdges.toString());
+    });
 });
 
 // count total vertex
@@ -221,50 +207,25 @@ function parsePoses(poses, selectedPose, extractFull) {
 var edgesToRespond;
 
 // query given graph's edges batch by batch
-//TODO query the edges collection, this needs an overhual
-app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
-    // if the array view of verticesDrawn map is undefined, initialize it
-    if (verticesDrawnArrayView === undefined) {
-        verticesDrawnArrayView = Object.keys(verticesDrawn);
-    }
-
-    edgesToRespond = {"index": -1,
-        "edgeCount" : 0,
-        "edges": []};
+app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:iteration', (req, res) => {
+    edgesToRespond = [];
 
     var graphName = req.params.graphName;
     var edgeBatchSize = req.params.edgeBatchSize;
-    var index = req.params.index;
+    var iteration = req.params.iteration;
 
-    // jump to the right index to collect edges
-    for (index; index < verticesDrawnArrayView.length; ++index) {
-        if (edgesToRespond["edges"].length < edgeBatchSize) {
-            var vid = verticesDrawnArrayView[index];
-            var fromPos = verticesDrawn[vid]["pos"];
-            var edges = verticesDrawn[vid]["edges"];
-            // console.log("vid " + vid + " has " + edges.length + " edges");
+    res.set('Content-Type', 'application/json');
+    var cursor = db.collection('edges').find({graph_name: graphName});
 
-            var leadTo;
-            for (var i = 0; i < edges.length; ++i) {
-                leadTo = edges[i];
-                // console.log("from " + vid + " to " + leadTo);
-
-                // check if this vertex's neighbor is also drawn
-                // as certain neighbors do not have selected pose
-                if (verticesDrawn[leadTo] !== undefined) {
-                    var toPos = verticesDrawn[leadTo]["pos"];
-                    edgesToRespond["edges"].push({"fromPos": fromPos, "toPos": toPos});
-                }
-            }
-
-            if (edgesToRespond["edges"].length >= edgeBatchSize) {
-                break;
-            }
-        }
-    }
-    edgesToRespond["index"] = index;
-    edgesToRespond["edgeCount"] = edgesToRespond["edges"].length;
-    res.send(edgesToRespond);
+    cursor.skip(iteration * edgeBatchSize)
+          .limit(parseInt(edgeBatchSize, 10))
+          .forEach(function iterCallback(edge) {
+              edgesToRespond.push(edge);
+          },
+          function endCallback(err) {
+             console.log("this batch of " + edgesToRespond.length + " edges is about to be returned");
+             res.send(edgesToRespond);
+          });
 });
 
 /*

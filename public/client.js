@@ -1,9 +1,11 @@
 /******************************************* client-side **************************************************/
-console.log('client running');
+console.log('client running\nbuild 2.0');
 
 var verticesFromBackend;
-var totalIteration = 0;
+var totalVertexIteration = 0;
+var totalEdgeIteration = 0;
 var totalVertex = 0;
+var totalEdge = 0;
 var totalEdgeDrawnCounter = 0;
 var originalGraphName = "";
 var graphName = "";
@@ -46,7 +48,6 @@ input.addEventListener('keyup', function(event) {
 
 // this API is simplified to merely take over control flow
 // after all vertices are drawn
-// TODO backend will return a NumberLong as total number of edges
 function countEdge(graphName) {
 	console.log('count edges in graph ' + graphName);
 
@@ -54,11 +55,19 @@ function countEdge(graphName) {
 	.then(function(response) {
 		if (response.ok) {
 			console.log('count edges successful');
-            queryGraphEdge(graphName, EDGE_BATCH_SIZE, 0);
-            return;
+            return response.json();
 		}
 		throw new Error('count edges failed');
 	})
+    .then(function(responseJSON) {
+        totalEdge = JSON.stringify(responseJSON);
+        console.log(graphName + " has " + totalEdge + " edges");
+
+        totalEdgeIteration = Math.floor(totalEdge / EDGE_BATCH_SIZE) + ((totalEdge % EDGE_BATCH_SIZE) ? 1 : 0);
+        console.log("need to iterate " + totalEdgeIteration);
+
+        queryGraphEdge(graphName, EDGE_BATCH_SIZE, 0);
+    })
 	.catch(function(err) {
 		document.getElementById('mainDiv').innerHTML = "count edges failed";
 		console.log(err);
@@ -74,9 +83,11 @@ function drawEdgeGeometry(fromPos, toPos) {
 }
 
 // query given graph's edges batch by batch, then draw them
-// TODO overhual this function, works similar as queryGraphVertex
-function queryGraphEdge(graphName, edgeBatchSize, index) {
-    fetch('/queryGraphEdge/' + graphName + '/' + edgeBatchSize + '/' + index, {method: 'GET'})
+function queryGraphEdge(graphName, edgeBatchSize, iteration) {
+    fetch('/queryGraphEdge/'
+          + graphName + '/'
+          + edgeBatchSize + '/'
+          + iteration, {method: 'GET'})
         .then(function(response) {
             if (response.ok) {
                 console.log('query graph edges successful');
@@ -85,33 +96,38 @@ function queryGraphEdge(graphName, edgeBatchSize, index) {
             throw new Error('query graph edges failed');
         })
         .then(function(responseJSON) {
+            // back-end returns an array of edges
             var edgesFromBackend = JSON.parse(JSON.stringify(responseJSON));
-            var backEndIndex = edgesFromBackend["index"];
-            var backEndEdgeCount = edgesFromBackend["edgeCount"];
-            // console.log("backend index: " + backEndIndex
-            //             + "\nbackend edge count " + backEndEdgeCount);
-            totalEdgeDrawnCounter += backEndEdgeCount;
+            console.log("edges from back-end length " + edgesFromBackend.length);
+
+            totalEdgeDrawnCounter += edgesFromBackend.length;
             // var head = edgesFromBackend["edges"][0]["fromPos"];
             // console.log(head[0]);
 
-            var edgeArray = edgesFromBackend["edges"];
-            for (var i  = 0; i < edgeArray.length; ++i) {
-                var fromPos = edgeArray[i]["fromPos"];
-                var toPos = edgeArray[i]["toPos"];
-                drawEdgeGeometry(fromPos, toPos);
+            // iterate on all edges, look up end vertices from totalVertexObjectDrawn map to get their coordinates
+            for (var i  = 0; i < edgesFromBackend.length; ++i) {
+                var fromVertex = edgesFromBackend[i]["from"];
+                var toVertex = edgesFromBackend[i]["to"];
+                if (totalVertexObjectDrawn[fromVertex] !== undefined &&
+                    totalVertexObjectDrawn[toVertex] !== undefined) {
+
+                    drawEdgeGeometry(totalVertexObjectDrawn[fromVertex].position.toArray(),
+                                     totalVertexObjectDrawn[toVertex].position.toArray());
+                }
+
             }
 
             // merge all drawn edge geometries to render a single line segment
             if (edgeGeometriesDrawn.length) {
                 var mergedEdgeObject = new THREE.LineSegments(THREE.BufferGeometryUtils.mergeBufferGeometries(edgeGeometriesDrawn),
-                    defaultEdgeMaterial);
+                                                              defaultEdgeMaterial);
                 allNonInteractiveEdges.add(mergedEdgeObject);
             }
             edgeGeometriesDrawn = [];
 
-            if (backEndIndex < totalVertex) {
+            if (++iteration < totalEdgeIteration) {
                 console.log("draw edges from back-end");
-                queryGraphEdge(graphName, edgeBatchSize, ++backEndIndex);
+                queryGraphEdge(graphName, edgeBatchSize, iteration);
             } else {
                 console.log("draw edges from back-end DONE"
                     + "\ntotal " + totalEdgeDrawnCounter + " edges drawn");
@@ -142,9 +158,11 @@ function countVertex(graphName, selectedPose) {
 		// document.getElementById('mainDiv').innerHTML = JSON.stringify(responseJSON);
 		totalVertex = JSON.stringify(responseJSON);
 		console.log("total vertex " + totalVertex);
-		
-		totalIteration = Math.floor(totalVertex / VERTEX_BATCH_SIZE) + ((totalVertex % VERTEX_BATCH_SIZE) ? 1 : 0);
-		console.log("need to iterate " + totalIteration);
+
+		// initialize the vertex object array with a fixed lenght
+		totalVertexObjectDrawn = Array.apply(null, Array(totalVertex)).map(function() {});
+		totalVertexIteration = Math.floor(totalVertex / VERTEX_BATCH_SIZE) + ((totalVertex % VERTEX_BATCH_SIZE) ? 1 : 0);
+		console.log("need to iterate " + totalVertexIteration);
 		
 		// query the graph in a loop
 		if (totalVertex > 0) {
@@ -194,7 +212,7 @@ function queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration) {
 		}
 		vertexGeometriesDrawn = [];
 
-		if (++iteration < totalIteration) {
+		if (++iteration < totalVertexIteration) {
 			// recursive call, query next batch of vertex
 			queryGraphVertex(graphName, selectedPose, vertexBatchSize, iteration);
 		} else {
@@ -217,6 +235,7 @@ var neighborEdgeGeometries = [];
 var mergedNeighborEdgeObject;
 var mergedNeighborVertexObject;
 var hoverNeighborON = false;
+// TODO BUG fix this query
 function getVertexNeighbors(graphName, vid) {
     console.log("query graph " + graphName
                 + "\nvid " + vid);
@@ -348,7 +367,7 @@ function drawVertexGeometry(vid, ori, pos, fullInfo) {
     vertexObject.rotation.copy(rotation);
     vertexObject.userData = {"fullInfo": fullInfo};
 
-    totalVertexObjectDrawn.push(vertexObject);
+    totalVertexObjectDrawn[vid] = vertexObject;
 }
 
 /******************************************* three.js **************************************************/
@@ -696,9 +715,9 @@ function highlight(objectsToIntersect) {
 		highlightIntersect();
 
         // this click event triggers a query
-        // TODO query selected vertex's neighbors, then draw them all
-        if (currentIntersected.userData["fullInfo"]["vid"]) {
-            getVertexNeighbors(graphName, currentIntersected.userData["fullInfo"]["vid"]);
+        // TODO BUG query selected vertex's neighbors, then draw them all
+        if (currentIntersected.userData["fullInfo"]["id"]) {
+            getVertexNeighbors(graphName, currentIntersected.userData["fullInfo"]["id"]);
         }
 
 	} else {
