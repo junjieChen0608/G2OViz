@@ -9,7 +9,7 @@ app.use(express.static('public'));
 app.use(express.static(__dirname + '/build'));
 
 let db;
-const dbName = "hdmap";
+const dbName = "test-hdmap";
 const url = 'mongodb://localhost:27017/';
 
 // connect to db "hdmap" and listen to 8080
@@ -147,7 +147,6 @@ var verticesDrawnArrayView;
 
 // parse each vertex, in particular, extract its ori, pos, edges, and full vertex info w/o edges
 function parseVertex(vertex, selectedPose) {
-	var edges;
 	var poses;
 	// expand this data structure to extract more info of a vertex
 	var extractFull = {"ori": undefined,
@@ -155,14 +154,12 @@ function parseVertex(vertex, selectedPose) {
 					   "edges": [],
                        "fullInfo": undefined};
 
-	var vid = vertex.vid;
+	var vid = vertex.id;
 	// console.log("parsing " + vid);
 
 	// iterate on all field in this vertex
 	for (var item in vertex) {
-		if (item === "edges") {
-			edges = vertex[item];
-		} else if (item === "poses") {
+		if (item === "poses") {
 			poses = vertex[item];
 		}
 	}
@@ -173,17 +170,15 @@ function parseVertex(vertex, selectedPose) {
 
 	// make sure ori and pos is not undefined
     if (extractFull["ori"] !== undefined && extractFull["pos"] !== undefined) {
-        if (edges !== undefined) {
-            parseEdges(edges, extractFull);
-        }
         verticesToRespond[vid] = extractFull;
         verticesDrawn[vid] = extractFull;
     } else {
         // console.log(vid + " does not have pose " + selectedPose);
     }
+
 	// console.log("vid " + vid
 	// 			+ "\nextractFull: " + JSON.stringify(verticesToRespond[vid]));
-    delete vertex["edges"];
+
     extractFull["fullInfo"] = vertex;
     // console.log(JSON.stringify(extractFull["fullInfo"]));
 }
@@ -194,21 +189,14 @@ function parsePoses(poses, selectedPose, extractFull) {
 
 	for (var pose in poses) {
 		if (pose === selectedPose) {
-            ori = poses[pose].ori;
-            pos = poses[pose].pos;
+            ori = poses[pose].orientation;
+            pos = poses[pose].position;
             if (ori && pos) {
                 extractFull["ori"] = ori;
                 extractFull["pos"] = pos;
                 break;
             }
         }
-	}
-}
-
-// extract "to" from edges array
-function parseEdges(edges, extractFull) {
-	for (var i = 0; i < edges.length; ++i) {
-		extractFull["edges"].push(JSON.stringify(edges[i]["to"]));
 	}
 }
 
@@ -232,6 +220,7 @@ function parseEdges(edges, extractFull) {
 var edgesToRespond;
 
 // query given graph's edges batch by batch
+//TODO query the edges collection, this needs an overhual
 app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
     // if the array view of verticesDrawn map is undefined, initialize it
     if (verticesDrawnArrayView === undefined) {
@@ -294,6 +283,7 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:index', (req, res) => {
 */
 
 // API for single vertex's neighbor query
+// TODO query neighbor edges of given vid, this needs pretty much another overhual
 app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
    var graphName = req.params.graphName;
    var vid = req.params.vid;
