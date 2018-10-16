@@ -235,7 +235,6 @@ var neighborEdgeGeometries = [];
 var mergedNeighborEdgeObject;
 var mergedNeighborVertexObject;
 var hoverNeighborON = false;
-// TODO BUG fix this query
 function getVertexNeighbors(graphName, vid) {
     console.log("query graph " + graphName
                 + "\nvid " + vid);
@@ -251,22 +250,18 @@ function getVertexNeighbors(graphName, vid) {
     .then(function(responseJSON) {
 
         var neighborsFromBackend = JSON.parse(JSON.stringify(responseJSON));
-        // console.log(neighborsFromBackend);
-        var fromPos = neighborsFromBackend["fromPos"]["pos"];
-        console.log("fromPos ori " + neighborsFromBackend["fromPos"]["ori"]);
-        var edges = neighborsFromBackend["edges"];
-        var edgesKeyView = Object.keys(edges);
+        console.log(vid + " has " + neighborsFromBackend.length + " neighbor edges");
 
-        console.log(vid + " pos " + fromPos);
-        console.log(vid + " has " + edgesKeyView.length + " edges");
+        var fromPos = currentIntersected.position.toArray();
 
         // iterate on the array to draw green LineSegment as selectable edges
         var leadTo;
-        for (var i = 0; i < edgesKeyView.length; ++i) {
-            leadTo = edgesKeyView[i];
-            drawNeighborEdgeGeometry(fromPos, edges[leadTo]["pos"]);
-            drawNeighborVertexGeometry(leadTo, edges[leadTo]["ori"], edges[leadTo]["pos"],
-                               edges[leadTo]["fullEdgeInfo"]);
+        for (var i = 0; i < neighborsFromBackend.length; ++i) {
+            leadTo = neighborsFromBackend[i]["to"];
+            drawNeighborEdgeGeometry(fromPos, totalVertexObjectDrawn[leadTo].position.toArray());
+            drawNeighborVertexGeometry(leadTo, new THREE.Quaternion().setFromEuler(totalVertexObjectDrawn[leadTo].rotation),
+                                       totalVertexObjectDrawn[leadTo].position.toArray(),
+                                       neighborsFromBackend[i]);
         }
 
         // merge and render all drawn green line segments
@@ -332,7 +327,7 @@ function drawNeighborVertexGeometry(leadTo, ori, pos, fullEdgeInfo) {
 
     var matrix = new THREE.Matrix4();
     var position = new THREE.Vector3(pos[0], pos[1], pos[2]);
-    var quaternion = new THREE.Quaternion(ori[1], ori[2], ori[3], ori[0]);
+    var quaternion = ori;
     var rotation = new THREE.Euler().setFromQuaternion(quaternion);
 
     matrix.compose(position, quaternion, SCALE);
@@ -602,7 +597,6 @@ function highlightNeighborVertex() {
 // subroutine of neighbor vertices highlighting
 // it displays info of selected edge
 // and draws transformBox and transformLine to visualize edge transform info
-// TODO not sure if this need to be changed to accommodate new database structure
 function highlightIntersectedNeighborVertex() {
     // console.log("hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]
     //             + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
@@ -619,9 +613,9 @@ function highlightIntersectedNeighborVertex() {
     var intersectPos = currentIntersected.position;
     var intersectOri = currentIntersected.quaternion;
 
-    if (intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"] !== undefined) {
-        var transPosVec = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["pos"];
-        var transOriVec = intersectedNeighborVertex.userData["fullEdgeInfo"]["transform"]["ori"];
+    if (intersectedNeighborVertex.userData["fullEdgeInfo"]["relative_pose"] !== undefined) {
+        var transPosVec = intersectedNeighborVertex.userData["fullEdgeInfo"]["relative_pose"]["position"];
+        var transOriVec = intersectedNeighborVertex.userData["fullEdgeInfo"]["relative_pose"]["orientation"];
 
         // construct THREE.js Vector3 and Quaternion from hovered neighbor vertex
         var transPos = new THREE.Vector3().fromArray(transPosVec);
@@ -715,7 +709,6 @@ function highlight(objectsToIntersect) {
 		highlightIntersect();
 
         // this click event triggers a query
-        // TODO BUG query selected vertex's neighbors, then draw them all
         if (currentIntersected.userData["fullInfo"]["id"]) {
             getVertexNeighbors(graphName, currentIntersected.userData["fullInfo"]["id"]);
         }

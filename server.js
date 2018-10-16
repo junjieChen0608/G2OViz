@@ -114,7 +114,6 @@ app.get('/queryGraphVertex/:graphName/:selectedPose/:vertexBatchSize/:iteration'
 		vid: {
 			ori: [w, x, y, z],
 			pos: [x, y, z],
-			edges: [vid, ...]
 			fullInfo: vertex object w/o edges
 		}
 		.
@@ -223,8 +222,12 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:iteration', (req, res) => {
               edgesToRespond.push(edge);
           },
           function endCallback(err) {
-             console.log("this batch of " + edgesToRespond.length + " edges is about to be returned");
-             res.send(edgesToRespond);
+              if (err) {
+                  console.log(err);
+              } else {
+                  console.log("this batch of " + edgesToRespond.length + " edges is about to be returned");
+                  res.send(edgesToRespond);
+              }
           });
 });
 
@@ -245,7 +248,6 @@ app.get('/queryGraphEdge/:graphName/:edgeBatchSize/:iteration', (req, res) => {
 */
 
 // API for single vertex's neighbor query
-// TODO query neighbor edges of given vid, this needs pretty much another overhual
 app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
    var graphName = req.params.graphName;
    var vid = req.params.vid;
@@ -253,36 +255,23 @@ app.get('/getVertexNeighbor/:graphName/:vid', (req, res) => {
    console.log("query graph " + graphName
                 + "\nvid " + vid);
 
+   // make sure this vertex is drawn
    if (verticesDrawn[vid]) {
-       var response = {};
-       response["fromPos"] = {"ori": verticesDrawn[vid]["ori"],
-                              "pos": verticesDrawn[vid]["pos"]};
-       var edges = {};
+       var neighborEdges = [];
 
-       var leadTo;
-       db.collection('vertices').findOne({graph_name: graphName, vid: parseInt(vid, 10)}, (err, result) => {
-           if (err) {
-               console.log(err);
-           }
-
-           var edgesFromDB = result["edges"];
-           if (edgesFromDB === undefined) {
-               edgesFromDB = [];
-           }
-
-           for (var i = 0; i < edgesFromDB.length; ++i) {
-               leadTo = edgesFromDB[i]["to"];
-               if (verticesDrawn[leadTo] !== undefined) {
-                   edges[leadTo] = {"ori": verticesDrawn[leadTo]["ori"],
-                                    "pos": verticesDrawn[leadTo]["pos"],
-                                    "fullEdgeInfo": edgesFromDB[i]};
+       db.collection('edges').find({graph_name: graphName, from: parseInt(vid, 10)}).forEach(
+           function iterCallback(edge) {
+               neighborEdges.push(edge);
+           },
+           function endCallback(err) {
+               if (err) {
+                   console.log(err);
+               } else {
+                   console.log(vid + " has " + neighborEdges.length + " neighbors");
+                   res.send(neighborEdges);
                }
            }
-
-           response["edges"] = edges;
-           // console.log("response object\n" + JSON.stringify(response));
-           res.send(response);
-       });
+       );
 
    } else {
        console.log(vid + " is NOT drawn");
