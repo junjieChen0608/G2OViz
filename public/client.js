@@ -352,6 +352,7 @@ function drawVertexGeometry(vid, ori, pos, fullInfo) {
 var container, stats;
 var vertexInfoWindow, edgeInfoWindow;
 var modeDiv, renderOptionDiv;
+var buttonToggleAllEdges;
 var camera, controls, scene, renderer, light;
 var highlightBox, transformBox;
 var transformLine;
@@ -374,6 +375,8 @@ var rayTracer = new THREE.Vector2();
 
 var color = new THREE.Color();
 
+const TEXT_SHOW_ALL_EDGES = "Show all edges";
+const TEXT_HIDE_ALL_EDGES = "Hide all edges";
 const COLOR_VERTEX = 0x135cd3;
 const COLOR_EDGE = 0x7f0026;
 const COLOR_NEIGHBOR_VERTEX = 0x29bf1e;
@@ -424,6 +427,10 @@ function initInvariants() {
 	renderOptionDiv.style.visibility = "visible";
 	renderOptionDiv.innerHTML = "graph name: " + originalGraphName
                                 + "<br/>chosen pose: " + selectedPose;
+
+    buttonToggleAllEdges = document.getElementById("toggleAllEdges");
+	buttonToggleAllEdges.style.visibility = "visible";
+	buttonToggleAllEdges.addEventListener('click', onToggleAllEdges);
 
 	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 100000);
 	camera.position.z = 2000;
@@ -511,6 +518,15 @@ function onDocumentKeyClick(event) {
         event.key === "X") {
         panMode = !panMode;
         modeDiv.innerHTML = "mode: " + ((panMode) ? "control" : "select");
+    }
+}
+
+function onToggleAllEdges(event) {
+    console.log(buttonToggleAllEdges.textContent + " clicked");
+    if (buttonToggleAllEdges.textContent === TEXT_HIDE_ALL_EDGES) {
+        buttonToggleAllEdges.innerHTML = TEXT_SHOW_ALL_EDGES;
+    } else {
+        buttonToggleAllEdges.innerHTML = TEXT_HIDE_ALL_EDGES;
     }
 }
 
