@@ -525,8 +525,10 @@ function onToggleAllEdges(event) {
     console.log(buttonToggleAllEdges.textContent + " clicked");
     if (buttonToggleAllEdges.textContent === TEXT_HIDE_ALL_EDGES) {
         buttonToggleAllEdges.innerHTML = TEXT_SHOW_ALL_EDGES;
+        allNonInteractiveEdges.visible = false;
     } else {
         buttonToggleAllEdges.innerHTML = TEXT_HIDE_ALL_EDGES;
+        allNonInteractiveEdges.visible = true;
     }
 }
 
