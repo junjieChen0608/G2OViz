@@ -1,5 +1,5 @@
 {
-  "name": "nodefs",
+  "name": "G2OViz",
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/junjieChen0608/NodeFS.git"
+    "url": "git+https://github.com/junjieChen0608/G2OViz.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/junjieChen0608/NodeFS/issues"
+    "url": "https://github.com/junjieChen0608/G2OViz/issues"
   },
-  "homepage": "https://github.com/junjieChen0608/NodeFS#readme",
+  "homepage": "https://github.com/junjieChen0608/G2OViz#readme",
   "dependencies": {
     "express": "^4.16.3",
     "mongodb": "^3.1.6"
