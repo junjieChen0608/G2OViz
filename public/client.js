@@ -309,6 +309,18 @@ function extractPoints(fromPos, toPos) {
     ];
 }
 
+// paint the vertex with given color
+function applyVertexColors( geometry, color ) {
+    var position = geometry.attributes.position;
+    var colors = [];
+
+    for (var i = 0; i < position.count; i++) {
+        colors.push(color.r, color.g, color.b);
+    }
+
+    geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+}
+
 // draw neighbor edges
 function drawNeighborEdgeGeometry(fromPos, toPos) {
     var points = extractPoints(fromPos, toPos);
@@ -757,16 +769,4 @@ function cleanUpAfterDeselect() {
     resetTransformBoxAndLine();
     // hide displayed info of hovered neighbor edge
     edgeInfoWindow.style.visibility = "hidden";
-}
-
-// paint the vertex with given color
-function applyVertexColors( geometry, color ) {
-	var position = geometry.attributes.position;
-	var colors = [];
-
-	for (var i = 0; i < position.count; i++) {
-		colors.push(color.r, color.g, color.b);
-	}
-
-	geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
 }
