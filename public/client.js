@@ -258,10 +258,15 @@ function getVertexNeighbors(graphName, vid) {
         var leadTo;
         for (var i = 0; i < neighborsFromBackend.length; ++i) {
             leadTo = neighborsFromBackend[i]["to"];
-            drawNeighborEdgeGeometry(fromPos, totalVertexObjectDrawn[leadTo].position.toArray());
-            drawNeighborVertexGeometry(leadTo, new THREE.Quaternion().setFromEuler(totalVertexObjectDrawn[leadTo].rotation),
-                                       totalVertexObjectDrawn[leadTo].position.toArray(),
-                                       neighborsFromBackend[i]);
+            console.log("lead to " + leadTo);
+            // there are some neighbor vertices are not presented in vertices collection
+            // but presented in edges collections
+            if (totalVertexObjectDrawn[leadTo] !== undefined) {
+                drawNeighborEdgeGeometry(fromPos, totalVertexObjectDrawn[leadTo].position.toArray());
+                drawNeighborVertexGeometry(leadTo, new THREE.Quaternion().setFromEuler(totalVertexObjectDrawn[leadTo].rotation),
+                    totalVertexObjectDrawn[leadTo].position.toArray(),
+                    neighborsFromBackend[i]);
+            }
         }
 
         // merge and render all drawn green line segments
@@ -473,7 +478,7 @@ function initInvariants() {
 	highlightBox.scale.copy(SCALE);
 	scene.add(highlightBox);
 
-	transformBox = new THREE.Mesh(new THREE.ConeBufferGeometry(0.7, 1.2, 8, 1, false, 0, 6.3),
+	transformBox = new THREE.Mesh(new THREE.ConeBufferGeometry(0.6, 1.1, 8, 1, false, 0, 6.3),
                                   new THREE.MeshLambertMaterial({color: COLOR_ON_SELECT}));
 
 	transformBox.scale.copy(SCALE);
