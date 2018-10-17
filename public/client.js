@@ -311,10 +311,6 @@ function extractPoints(fromPos, toPos) {
 
 // draw neighbor edges
 function drawNeighborEdgeGeometry(fromPos, toPos) {
-    // console.log("draw selectable edge"
-    //             + "\nfrom " + fromPos
-    //             + "\nto " + toPos);
-
     var points = extractPoints(fromPos, toPos);
     var selectableEdgeGeometry = new THREE.BufferGeometry();
     selectableEdgeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
@@ -325,8 +321,6 @@ function drawNeighborEdgeGeometry(fromPos, toPos) {
 var neighborVertexGeometries = [];
 var neighborVertexObjects = [];
 function drawNeighborVertexGeometry(leadTo, ori, pos, fullEdgeInfo) {
-    // console.log("draw neighbor " + leadTo
-    //             + "\nori " + ori + "\npos " + pos);
 
     var geometry = new THREE.ConeBufferGeometry(0.5, 1, 8, 1, false, 0, 6.3);
 
@@ -600,13 +594,8 @@ function highlightNeighborVertex() {
 }
 
 // subroutine of neighbor vertices highlighting
-// it displays info of selected edge
-// and draws transformBox and transformLine to visualize edge transform info
+// it displays info of selected edge and draws transformBox and transformLine to visualize edge transform info
 function highlightIntersectedNeighborVertex() {
-    // console.log("hit vid " + intersectedNeighborVertex.userData["fullEdgeInfo"]["to"]
-    //             + "\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
-
-    // console.log("full edge info\n" + JSON.stringify(intersectedNeighborVertex.userData["fullEdgeInfo"], null, 2));
 
     // display info of this edge
     edgeInfoWindow.style.top = computeEdgeInfoWindowTop();
@@ -632,11 +621,6 @@ function highlightIntersectedNeighborVertex() {
         var selectedNeighborVertexMat = new THREE.Matrix4().compose(transPos, transOri, SCALE);
         // compose a transformed matrix
         var transformationMat = new THREE.Matrix4().multiplyMatrices(selectedVertexMat, selectedNeighborVertexMat);
-
-        // console.log("before\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri
-        //             + "\ntransPosVec\n" + transPosVec + "\ntransOriVec\n" + transOriVec);
-
-        // console.log("after\ninterPos\n" + intersectPos + "\ninterOri\n" + intersectOri);
 
         // reset previously drawn transfromLine and transformBox here
         // this ensures user to pan the view while retaining neighbor edge data

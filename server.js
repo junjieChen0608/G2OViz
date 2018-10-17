@@ -100,12 +100,6 @@ app.get('/queryGraphVertex/:graphName/:selectedPose/:vertexBatchSize/:iteration'
 		  	}
 		  });
 
-	// cursor = db.collection('vertices').find({graph_name: graphName});
-	// cursor.skip(iteration * vertexBatchSize)
-	// 	  .limit(parseInt(vertexBatchSize, 10))
-	// 	  .stream()
-	// 	  .pipe(JSONStream.stringify())
-	// 	  .pipe(res);
 });
 
 /*
