@@ -13,18 +13,9 @@ curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
-== Install following npm modules under G2OViz root directory ==
+== Install npm dependencies under G2OViz root directory ==
 
 ```npm install```
-
-**express**
-
-```npm install express --save```
-
-**MongoDB node driver**
-
-```npm install mongodb --save```
-
 
 ##Things to note
 * By default, the server uses "test-hdmap" as the MongoDB database, if you are using a different name for your database, you might want to change dbName in server.js.
