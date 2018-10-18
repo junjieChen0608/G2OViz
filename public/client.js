@@ -710,7 +710,7 @@ function highlight(objectsToIntersect) {
 		highlightIntersect();
 
         // this click event triggers a query
-        if (currentIntersected.userData["fullInfo"]["id"]) {
+        if (currentIntersected.userData["fullInfo"]["id"] !== undefined) {
             getVertexNeighbors(graphName, currentIntersected.userData["fullInfo"]["id"]);
         }
 
