@@ -4,7 +4,7 @@ to use this project.
 
 **MongoDB**
 
-[[https://docs.mongodb.com/master/tutorial/install-mongodb-on-ubuntu/?_ga=2.57525421.604803410.1537355422-2022223102.1534571995 | official installation guide]]
+[official installation guide](https://docs.mongodb.com/master/tutorial/install-mongodb-on-ubuntu/?_ga=2.57525421.604803410.1537355422-2022223102.1534571995)
 
 **node.js**
 
@@ -13,7 +13,7 @@ curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
-== Install npm dependencies under G2OViz root directory ==
+**Install npm dependencies under G2OViz root directory**
 
 ```npm install```
 
