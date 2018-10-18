@@ -1,4 +1,4 @@
-##Pre-requisite
+## Pre-requisite
 You will need the following software installed in your system
 to use this project.
 
@@ -17,13 +17,13 @@ sudo apt-get install -y nodejs
 
 ```npm install```
 
-##Things to note
+## Things to note
 * By default, the server uses "test-hdmap" as the MongoDB database, if you are using a different name for your database, you might want to change dbName in server.js.
 * Collections under hdmap are bags, graphs, vertices.
 * Server is listening to localhost: 8080.
 * Server connects mongodb at localhost: 27017.
 
-##How to use this project
+## How to use this project
 1) Make sure you are in root directory of G2OViz
 2) run the node app
 
@@ -34,7 +34,7 @@ in your terminal, if everything is corret, it will say "server running, listenin
 4) type in the graph name you want to render and choose a pose
 5) click render button or hit enter key
 
-##Interact with the visualizer
+## Interact with the visualizer
 * Rotate: left mouse button
 * Pan: right mouse button
 * Zoom: mouse scroll, or hold mouse scroll and move mouse back and forth
