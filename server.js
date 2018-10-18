@@ -6,7 +6,7 @@ const app = express();
 // const JSONStream = require('JSONStream');
 
 app.use(express.static('public'));
-app.use(express.static(__dirname + '/build'));
+app.use(express.static('node_modules'));
 
 let db;
 const dbName = "test-hdmap";
